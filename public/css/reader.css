@@ -43,18 +43,28 @@ body.reader-body {
 .rviewport { flex: 1; position: relative; min-width: 0; background: var(--paper); }
 foliate-view { display: block; width: 100%; height: 100%; }
 
-/* Sayfa çevirme bölgeleri */
+/* Sayfa çevirme düğmeleri — kenarda ortalanmış küçük daireler.
+   Eskiden tüm ekran yüksekliğini kaplayan şeffaf bölgelerdi; dokunmatikte
+   metin seçimini ve bağlantılara dokunmayı engelliyor, hover olmadığı için
+   de hiç görünmüyorlardı. */
 .rzone {
-  position: absolute; top: 0; bottom: 0; width: clamp(48px, 9%, 110px);
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 40px; height: 40px; border-radius: 50%;
   display: grid; place-items: center; z-index: 12;
-  color: var(--ink); opacity: 0; cursor: pointer; user-select: none;
-  background: linear-gradient(to right, color-mix(in srgb, var(--ink) 7%, transparent), transparent);
-  transition: opacity 0.2s var(--ease);
+  padding: 0; cursor: pointer; user-select: none;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--paper-soft) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 12px -4px rgba(0, 0, 0, 0.45);
+  opacity: 0.4;
+  transition: opacity 0.2s var(--ease), background 0.2s var(--ease);
 }
-.rzone.next { right: 0; background: linear-gradient(to left, color-mix(in srgb, var(--ink) 7%, transparent), transparent); }
-.rzone.prev { left: 0; }
-.rzone:hover { opacity: 1; }
-.rzone svg { width: 26px; height: 26px; }
+.rzone.prev { left: 0.5rem; }
+.rzone.next { right: 0.5rem; }
+.rzone:hover, .rzone:focus-visible { opacity: 1; background: var(--paper-soft); }
+.rzone:active { opacity: 1; transform: translateY(-50%) scale(0.92); }
+.rzone svg { width: 22px; height: 22px; }
 
 /* ---------- Alt çubuk ---------- */
 .rfooter {
@@ -204,5 +214,15 @@ body.focus-mode .focus-exit { display: grid; }
 @media (max-width: 640px) {
   .rtitle span { display: none; }
   .hide-xs { display: none !important; }
-  .rzone { width: 22%; }
+  /* Dokunmatikte hedef büyür, hover olmadığı için daha görünür durur ve
+     kısmen ekran dışına taşarak metnin üzerine binmez (iframe içeriğinin
+     yan boşluğu 2rem = 32px; düğmenin görünen kısmı 30px'te biter). */
+  .rzone { width: 44px; height: 44px; opacity: 0.5; }
+  .rzone.prev { left: -14px; }
+  .rzone.next { right: -14px; }
+}
+
+/* Kalem/dokunmatik gibi hover'ı olmayan girdilerde düğmeler hep okunur kalsın */
+@media (hover: none) {
+  .rzone { opacity: 0.5; }
 }

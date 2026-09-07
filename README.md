@@ -33,7 +33,7 @@ yoktur; `npm install` ve `npm start` ile çalışır.
 - İçindekiler paneli, notlar & vurgular paneli
 - Dört renkte vurgu — foliate-js'in kendi katmanı kullanılır, metin DOM'una dokunulmaz
 - Vurguya tıklayınca not düzenleme, panelden vurguya atlama
-- Klavye: `←` `→` sayfa, `F` odak modu, `Esc` kapat; mobilde kaydırma hareketi
+- Klavye: `←` `→` sayfa, `F` odak modu, `Esc` kapat; mobilde kaydırma hareketi ve kenardaki ok düğmeleri
 - PDF: iptal edilebilir çizim (hızlı sayfa değiştirmede takılmaz), yakınlaştırma, sayfa notları, koyu modda ters çevirme
 
 **Yönetim**
