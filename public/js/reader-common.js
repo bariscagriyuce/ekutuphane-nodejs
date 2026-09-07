@@ -39,7 +39,14 @@ export function toast(message, type = 'success', ms = 3500) {
 }
 
 /* ---------- Görünüm ayarları ---------- */
-const DEFAULTS = { fontSize: 18, lineHeight: 1.6, maxWidth: 900, fontFamily: "'Literata', Georgia, serif", theme: 'dark' };
+const DEFAULTS = {
+  fontSize: 18,
+  lineHeight: 1.6,
+  maxWidth: 900,
+  fontFamily: "'Literata', Georgia, serif",
+  theme: 'dark',
+  direction: 'auto', // auto | ltr | rtl
+};
 
 export const settings = {
   ...DEFAULTS,
@@ -74,6 +81,7 @@ function renderSettingsUI() {
   $$('[data-rtheme]').forEach((b) => b.classList.toggle('active', b.dataset.rtheme === settings.theme));
   $$('[data-width]').forEach((b) => b.classList.toggle('active', Number(b.dataset.width) === settings.maxWidth));
   $$('[data-font]').forEach((b) => b.classList.toggle('active', b.dataset.font === settings.fontFamily));
+  $$('[data-direction]').forEach((b) => b.classList.toggle('active', b.dataset.direction === settings.direction));
   const f = $('#val-font');
   if (f) f.textContent = settings.fontSize + 'px';
   const l = $('#val-line');
@@ -108,6 +116,9 @@ document.addEventListener('click', (e) => {
 
   const font = e.target.closest('[data-font]');
   if (font) return applyChange({ fontFamily: font.dataset.font });
+
+  const direction = e.target.closest('[data-direction]');
+  if (direction) return applyChange({ direction: direction.dataset.direction });
 });
 
 /* ---------- Paneller & açılır kutu ---------- */

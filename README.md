@@ -29,6 +29,8 @@ yoktur; `npm install` ve `npm start` ile çalışır.
 - EPUB, MOBI, AZW3 ([foliate-js](https://github.com/johnfactotum/foliate-js)) ve PDF ([PDF.js](https://mozilla.github.io/pdf.js/))
 - Kaldığınız yeri hatırlar, ilerleme çubuğuyla kitabın herhangi bir yerine atlar
 - Üç kağıt teması: açık, sepya, koyu
+- Metin yönü otomatik belirlenir (dil bilgisini yanlış veren EPUB'lar için elle
+  soldan/sağdan seçeneği de var)
 - Yazı boyutu, satır aralığı, sayfa genişliği, serif/sans yazı tipi ayarları (tarayıcıda saklanır)
 - İçindekiler paneli, notlar & vurgular paneli
 - Dört renkte vurgu — foliate-js'in kendi katmanı kullanılır, metin DOM'una dokunulmaz

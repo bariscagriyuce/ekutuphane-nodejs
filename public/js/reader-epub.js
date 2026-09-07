@@ -16,6 +16,39 @@ let currentDoc = null;
 let currentIndex = null;
 let baseCfi = null;
 
+/* ---------- Metin yönü ----------
+   Bazı EPUB'lar kitap dilini yanlış bildiriyor (ör. Türkçe bir kitapta
+   dc:language = "ar-SA", çünkü Arapça alıntılar var). foliate bu bilgiye
+   bakıp tüm belgeye dir="rtl" uyguluyor ve Türkçe metin sağa dayanıyor.
+
+   Çözüm: yönü belgenin KENDİ dil bilgisinden belirle (body/html xml:lang),
+   yoksa kitap diline düş. Paragraf düzeyindeki dir="rtl" işaretlerine
+   dokunulmaz; Arapça alıntılar doğru yönde kalır. Kullanıcı ayarlardan
+   elle de zorlayabilir. */
+const RTL_LANG = /^(ar|fa|he|iw|ur|yi|ji|ps|sd|ug|dv|ckb)\b/i;
+
+function langOf(node) {
+  return (node?.getAttribute?.('xml:lang') || node?.getAttribute?.('lang') || '').replace('_', '-');
+}
+
+function autoDirection(doc) {
+  // Belgenin kendi dili en güvenilir bilgi
+  const docLang = langOf(doc?.body) || langOf(doc?.documentElement);
+  if (docLang) return RTL_LANG.test(docLang) ? 'rtl' : 'ltr';
+
+  // Yoksa kitap metadatasına düş
+  const meta = book?.metadata?.language;
+  const bookLang = Array.isArray(meta) ? meta[0] : meta;
+  return RTL_LANG.test(String(bookLang || '')) ? 'rtl' : 'ltr';
+}
+
+function applyDirection(doc = currentDoc) {
+  if (!doc?.documentElement) return;
+  const chosen = settings.direction === 'auto' ? autoDirection(doc) : settings.direction;
+  doc.documentElement.setAttribute('dir', chosen);
+  doc.body?.removeAttribute('dir');
+}
+
 /* ---------- iframe içi stiller ---------- */
 function paperColors() {
   const map = {
@@ -218,13 +251,17 @@ async function init() {
     viewer.renderer?.setAttribute('flow', 'scrolled');
     viewer.renderer?.setAttribute('max-column-count', '1');
 
-    bindSettings(applyStyles);
+    bindSettings(() => {
+      applyStyles();
+      applyDirection();
+    });
     renderToc(book.toc);
 
     viewer.addEventListener('load', (e) => {
       currentDoc = e.detail.doc;
       currentIndex = e.detail.index;
       applyStyles();
+      applyDirection(currentDoc);
       scaleStandaloneImages(currentDoc);
       hookSelection(currentDoc);
       hookSwipe(currentDoc);
