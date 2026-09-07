@@ -1,4 +1,5 @@
 // server.js — Uygulama giriş noktası
+import './preflight.js'; // ortam denetimi diğer modüllerden önce çalışmalı
 import express from 'express';
 import session from 'express-session';
 import compression from 'compression';

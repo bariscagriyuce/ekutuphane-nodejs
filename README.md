@@ -110,6 +110,48 @@ kayıtlar):
 npm run check
 ```
 
+## Paylaşımlı hostinge kurulum (Hostinger vb.)
+
+Git tabanlı Node.js dağıtımı kullanan panellerde ayarlar şöyle olmalı:
+
+| Alan | Değer |
+|---|---|
+| Framework preset | Express |
+| Branch | `main` |
+| **Node version** | **24 veya üzeri** (aşağıdaki nota bakın) |
+| Root directory | `./` |
+| Build command | `npm install --omit=dev` |
+| Start command | `npm start` |
+
+**Node sürümü:** `node:sqlite` modülü Node 22.5'te geldi ama 23.4'e kadar
+`--experimental-sqlite` bayrağı istiyor. Panelde 24 veya üzeri bir sürüm varsa
+onu seçin. Yalnızca 22.x sunuluyorsa ortam değişkenlerine
+`NODE_OPTIONS=--experimental-sqlite` ekleyin. Yanlış sürümde uygulama açılışta
+ne yapılması gerektiğini yazan bir hata verip durur.
+
+**Ortam değişkenleri:**
+
+| Değişken | Değer |
+|---|---|
+| `NODE_ENV` | `production` |
+| `SESSION_SECRET` | Rastgele uzun bir dize (`node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`) |
+| `DATA_ROOT` | Uygulama klasörünün **dışında**, kalıcı bir yol — ör. `/home/<kullanici>/ebook-data` |
+
+`PORT` genelde panel tarafından otomatik verilir; elle eklemeyin.
+
+**`DATA_ROOT` neden dışarıda olmalı:** her git dağıtımında uygulama klasörü
+yeniden oluşturulabilir. Veritabanı ve kitap arşivi orada durursa dağıtımla
+birlikte silinme riski taşır. Klasörü bir kez oluşturup yolunu `DATA_ROOT`
+olarak verin; uygulama içindeki `uploads/` alt klasörlerini kendisi açar.
+
+**HTTPS:** `NODE_ENV=production` iken oturum çerezi yalnızca HTTPS üzerinden
+gönderilir. Uygulama ters vekil arkasında çalıştığını varsayar
+(`trust proxy`), yani panelin SSL'i açık olmalıdır. Giriş yaptıktan sonra
+sürekli giriş sayfasına dönüyorsanız ilk bakılacak yer budur.
+
+**Disk:** Kitap arşivi hosting kotanıza dâhildir. Yükleme yapmadan önce
+paketinizin disk alanını kontrol edin.
+
 ## Güvenlik
 
 - Tüm durum değiştiren istekler oturum tabanlı CSRF token'ı ister
