@@ -39,7 +39,17 @@ export const COVERS_DIR = path.join(UPLOAD_DIR, 'covers');
 export const IMPORT_DIR = path.join(UPLOAD_DIR, 'import');
 
 for (const dir of [UPLOAD_DIR, BOOKS_DIR, COVERS_DIR, IMPORT_DIR]) {
-  fs.mkdirSync(dir, { recursive: true });
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+  } catch (err) {
+    console.error(
+      `\n✗ Veri klasörü oluşturulamadı: ${dir}\n` +
+        `  Sebep: ${err.message}\n` +
+        `  DATA_ROOT şu an: ${DATA_ROOT}\n` +
+        '  Bu yolun var olduğundan ve uygulamanın yazma izni olduğundan emin olun.\n'
+    );
+    process.exit(1);
+  }
 }
 
 export const PORT = Number(process.env.PORT || 3000);
@@ -51,10 +61,21 @@ export const IS_PROD = NODE_ENV === 'production';
 // oturumların düşmemesi için kalıcıdır).
 function resolveSessionSecret() {
   if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+
   const secretFile = path.join(PROJECT_ROOT, '.session-secret');
-  if (fs.existsSync(secretFile)) return fs.readFileSync(secretFile, 'utf8').trim();
   const secret = crypto.randomUUID() + crypto.randomUUID();
-  fs.writeFileSync(secretFile, secret, { mode: 0o600 });
+  try {
+    if (fs.existsSync(secretFile)) return fs.readFileSync(secretFile, 'utf8').trim();
+    fs.writeFileSync(secretFile, secret, { mode: 0o600 });
+  } catch {
+    // Uygulama klasörü salt okunur olabilir (bazı hosting ortamları böyle).
+    // Anahtarı bellekte tutarız; uygulama çalışır, yalnızca yeniden
+    // başlatıldığında açık oturumlar düşer.
+    console.warn(
+      '⚠ SESSION_SECRET tanımlı değil ve dosyaya yazılamadı; geçici anahtar üretildi.\n' +
+        '  Yeniden başlatmada oturumlar düşer. Ortam değişkenlerine SESSION_SECRET ekleyin.'
+    );
+  }
   return secret;
 }
 export const SESSION_SECRET = resolveSessionSecret();

@@ -143,16 +143,30 @@ if (adminCount === 0) {
   const plain = crypto.randomUUID().replaceAll('-', '').slice(0, 16);
   const hash = bcrypt.hashSync(plain, 12);
   db.prepare("INSERT INTO users (username, password, role) VALUES (?, ?, 'admin')").run('admin', hash);
+  // Şifreyi dosyaya yazmayı dener; yazamazsa (salt okunur uygulama klasörü)
+  // log'a basar. Bu adım hiçbir şekilde uygulamayı düşürmemeli.
   const credFile = path.join(PROJECT_ROOT, 'admin_password.txt');
-  fs.writeFileSync(
-    credFile,
-    'İlk kurulum yönetici hesabı\n' +
-      'Kullanıcı adı : admin\n' +
-      `Şifre         : ${plain}\n\n` +
-      'Giriş yaptıktan sonra şifrenizi değiştirin ve bu dosyayı SİLİN.\n',
-    { mode: 0o600 }
+  let written = false;
+  try {
+    fs.writeFileSync(
+      credFile,
+      'İlk kurulum yönetici hesabı\n' +
+        'Kullanıcı adı : admin\n' +
+        `Şifre         : ${plain}\n\n` +
+        'Giriş yaptıktan sonra şifrenizi değiştirin ve bu dosyayı SİLİN.\n',
+      { mode: 0o600 }
+    );
+    written = true;
+  } catch {
+    /* aşağıda log'a basılacak */
+  }
+
+  console.log(
+    '\n  ✔ Yönetici hesabı oluşturuldu — kullanıcı adı: admin\n' +
+      (written
+        ? `    Şifre şu dosyada: ${credFile}\n`
+        : `    Şifre: ${plain}\n    (dosyaya yazılamadı; giriş yapıp hemen değiştirin)\n`)
   );
-  console.log(`\n  ✔ Yönetici hesabı oluşturuldu. Şifre: ${credFile}\n`);
 }
 
 export function getSettings() {
