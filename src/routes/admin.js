@@ -13,7 +13,11 @@ import { sendMail, smtpConfigured } from '../services/mailer.js';
 import { listBooks } from '../services/books.js';
 
 export const router = Router();
-router.use(requireLogin, requireAdmin);
+// DİKKAT: Yol verilmeden yazılan router.use(...) bu yönlendiriciye uğrayan
+// TÜM isteklere uygulanır. Bu yönlendirici kök dizine bağlı olduğu için
+// yönetici kontrolü açıkça '/admin' ile sınırlanmalıdır; aksi hâlde
+// kütüphane sayfaları da yönetici gerektirir.
+router.use('/admin', requireLogin, requireAdmin);
 
 const upload = multer({
   dest: path.join(os.tmpdir(), 'ekutuphane-uploads'),
