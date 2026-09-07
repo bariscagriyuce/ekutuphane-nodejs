@@ -156,6 +156,15 @@ gönderilir. Uygulama ters vekil arkasında çalıştığını varsayar
 (`trust proxy`), yani panelin SSL'i açık olmalıdır. Giriş yaptıktan sonra
 sürekli giriş sayfasına dönüyorsanız ilk bakılacak yer budur.
 
+**Hazır veritabanı yüklerken:** SQLite WAL kipinde çalışır; veritabanının
+yanında `database.sqlite-wal` ve `database.sqlite-shm` dosyaları oluşur.
+Mevcut bir `database.sqlite`'ın üzerine yenisini kopyalarken **bu iki dosyayı
+da silin**, aksi hâlde eski WAL yeni dosyanın üzerine uygulanır ve uygulama
+eski (çoğu zaman boş) veriyi görmeye devam eder. Uygulamayı durdurun,
+üç dosyayı da temizleyin, yeni `database.sqlite`'ı koyun, sonra başlatın.
+Açılış log'undaki `İçerik : N kullanıcı · N kitap` satırı hangi veriyi
+okuduğunu söyler.
+
 **Disk:** Kitap arşivi hosting kotanıza dâhildir. Yükleme yapmadan önce
 paketinizin disk alanını kontrol edin.
 

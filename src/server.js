@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { PORT, PROJECT_ROOT, SESSION_SECRET, IS_PROD, DATA_ROOT, DB_FILE } from './config.js';
+import { db } from './db.js';
 import { SqliteStore } from './session-store.js';
 import { csrf } from './middleware/csrf.js';
 import { localsMiddleware } from './middleware/auth.js';
@@ -84,7 +85,19 @@ app.use((err, req, res, _next) => {
 });
 
 app.listen(PORT, () => {
+  // Açılışta ne okunduğunu yazmak, yanlış veritabanına bakıldığını
+  // (ör. yükleme sonrası bayat -wal dosyası) tek bakışta görünür kılar.
+  let summary = '';
+  try {
+    const users = db.prepare('SELECT COUNT(*) AS c FROM users').get().c;
+    const books = db.prepare('SELECT COUNT(*) AS c FROM books').get().c;
+    summary = `${users} kullanıcı · ${books.toLocaleString('tr-TR')} kitap`;
+  } catch (err) {
+    summary = `okunamadı: ${err.message}`;
+  }
+
   console.log(`\n  📚 E-Kütüphane  http://localhost:${PORT}`);
   console.log(`     Veri klasörü : ${DATA_ROOT}`);
-  console.log(`     Veritabanı   : ${DB_FILE}\n`);
+  console.log(`     Veritabanı   : ${DB_FILE}`);
+  console.log(`     İçerik       : ${summary}\n`);
 });
