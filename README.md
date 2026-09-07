@@ -146,6 +146,11 @@ yeniden oluşturulabilir. Veritabanı ve kitap arşivi orada durursa dağıtıml
 birlikte silinme riski taşır. Klasörü bir kez oluşturup yolunu `DATA_ROOT`
 olarak verin; uygulama içindeki `uploads/` alt klasörlerini kendisi açar.
 
+**LiteSpeed / require() uyumu:** Bazı paneller (LiteSpeed'in `lsnode.js`'i
+gibi) ESM giriş dosyasını `require()` ile yükler. Bu yüzden sunucu modül
+grafiğinde **top-level await kullanılmamalıdır**; tek bir tanesi bile
+`ERR_REQUIRE_ASYNC_MODULE` ile uygulamayı düşürür ve site 503 verir.
+
 **HTTPS:** `NODE_ENV=production` iken oturum çerezi yalnızca HTTPS üzerinden
 gönderilir. Uygulama ters vekil arkasında çalıştığını varsayar
 (`trust proxy`), yani panelin SSL'i açık olmalıdır. Giriş yaptıktan sonra

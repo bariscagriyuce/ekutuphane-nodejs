@@ -1,7 +1,15 @@
 // preflight.js — Uygulama açılmadan önce çalışma ortamını doğrular.
 // server.js'te ilk import olarak yer alır; böylece eksik bir gereksinim
 // anlaşılmaz bir yığın izi yerine anlaşılır bir mesajla bildirilir.
+//
+// ÖNEMLİ: Bu dosyada (ve genel olarak sunucu modül grafiğinde) top-level
+// await KULLANILMAMALI. LiteSpeed gibi bazı hosting çalıştırıcıları ESM
+// giriş dosyasını require() ile yüklüyor; grafikte tek bir top-level await
+// olması ERR_REQUIRE_ASYNC_MODULE ile uygulamayı düşürüyor.
+// Bu yüzden modül varlığı senkron createRequire ile denetleniyor.
+import { createRequire } from 'node:module';
 
+const require = createRequire(import.meta.url);
 const [major, minor] = process.versions.node.split('.').map(Number);
 
 function fail(lines) {
@@ -21,7 +29,7 @@ if (major < 22 || (major === 22 && minor < 5)) {
 }
 
 try {
-  await import('node:sqlite');
+  require('node:sqlite');
 } catch {
   fail([
     `✗ "node:sqlite" modülü Node.js ${process.versions.node} üzerinde etkin değil.`,
