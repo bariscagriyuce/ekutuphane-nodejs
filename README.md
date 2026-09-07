@@ -39,6 +39,7 @@ yoktur; `npm install` ve `npm start` ile çalışır.
 **Yönetim**
 
 - Kullanıcı hesapları, roller (yönetici / okuyucu)
+- Kullanıcı şifresi sıfırlama (okuma verisi korunur, giriş kilidi kalkar)
 - Sekmeli panel: kitaplar (arama + sayfalama), kitap ekle (sürükle-bırak), toplu içe aktarma (ilerleme çubuğuyla), kullanıcılar, SMTP
 - Toplu içe aktarma komut satırından da çalışır: `npm run import`
 
@@ -180,6 +181,7 @@ paketinizin disk alanını kontrol edin.
 
 - Tüm durum değiştiren istekler oturum tabanlı CSRF token'ı ister
 - Giriş denemesi kullanıcı+IP başına 5 ile sınırlı, 15 dakika kilit
+  (yönetici şifre sıfırlayınca kilit hemen kalkar)
 - Kitap dosyaları web'den doğrudan erişilemez; yalnızca oturum açmış kullanıcılara `/file/:id` üzerinden sunulur
 - Dosya yolları `DATA_ROOT` dışına çıkamaz (path traversal koruması)
 - Oturum çerezi `httpOnly` + `sameSite=lax`; `NODE_ENV=production` ise `secure`

@@ -156,6 +156,27 @@ router.post('/admin/users', (req, res) => {
   return flash(req, res, 'success', `"${username}" kullanıcısı eklendi.`);
 });
 
+// Kullanıcı şifresini sıfırla. Şifreler geri döndürülemez biçimde saklandığı
+// için yöneticinin tek seçeneği yeni bir şifre atamaktır. Kullanıcının
+// favorileri, okuma ilerlemesi ve notları korunur.
+router.post('/admin/users/:id/password', (req, res) => {
+  const id = Number.parseInt(req.params.id, 10) || 0;
+  const password = String(req.body.password || '');
+
+  if (password.length < 10) {
+    return res.status(400).json({ success: false, message: 'Şifre en az 10 karakter olmalıdır.' });
+  }
+
+  const user = db.prepare('SELECT username FROM users WHERE id = ?').get(id);
+  if (!user) return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı.' });
+
+  db.prepare('UPDATE users SET password = ? WHERE id = ?').run(bcrypt.hashSync(password, 12), id);
+  // Şifre sıfırlanınca giriş denemesi kilidi de kalkmalı
+  db.prepare('DELETE FROM login_attempts WHERE username = ?').run(user.username);
+
+  res.json({ success: true, message: `"${user.username}" kullanıcısının şifresi güncellendi.` });
+});
+
 router.post('/admin/users/:id/delete', (req, res) => {
   const id = Number.parseInt(req.params.id, 10) || 0;
   if (id === req.session.user.id) return flash(req, res, 'error', 'Kendi hesabınızı silemezsiniz.');

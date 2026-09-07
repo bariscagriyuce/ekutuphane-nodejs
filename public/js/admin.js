@@ -132,6 +132,40 @@ importBtn?.addEventListener('click', async () => {
   queue = [];
 });
 
+/* ---------- Kullanıcı şifresi sıfırlama ---------- */
+const passwordModal = $('#password-modal');
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-reset-user]');
+  if (!btn) return;
+  $('#reset-user-id').value = btn.dataset.resetUser;
+  $('#reset-username').textContent = btn.dataset.username;
+  $('#reset-password').value = '';
+  passwordModal.classList.add('open');
+  passwordModal.setAttribute('aria-hidden', 'false');
+  setTimeout(() => $('#reset-password').focus(), 60);
+});
+
+$('#reset-generate')?.addEventListener('click', () => {
+  const bytes = crypto.getRandomValues(new Uint8Array(9));
+  $('#reset-password').value = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+});
+
+$('#password-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = $('#reset-user-id').value;
+  const password = $('#reset-password').value;
+  const btn = e.currentTarget.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  const r = await api(`/admin/users/${id}/password`, { method: 'POST', body: { password } });
+  btn.disabled = false;
+  toast(r.message || (r.success ? 'Güncellendi.' : 'Güncellenemedi.'), r.success ? 'success' : 'error');
+  if (r.success) {
+    passwordModal.classList.remove('open');
+    passwordModal.setAttribute('aria-hidden', 'true');
+  }
+});
+
 /* ---------- SMTP testi ---------- */
 $('#test-smtp-btn')?.addEventListener('click', async (e) => {
   const email = $('#test-email').value.trim();

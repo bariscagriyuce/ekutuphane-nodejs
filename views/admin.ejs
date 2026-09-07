@@ -188,13 +188,18 @@
                       <td><span class="tag <%= u.role === 'admin' ? 'admin' : '' %>"><%= u.role === 'admin' ? 'Yönetici' : 'Okuyucu' %></span></td>
                       <td style="color:var(--text-soft)"><%= u.kindle_email || '—' %></td>
                       <td>
-                        <% if (u.id !== user.id) { %>
-                          <form action="/admin/users/<%= u.id %>/delete" method="post"
-                                onsubmit="return confirm('<%= u.username %> kullanıcısı ve tüm okuma verileri silinecek. Emin misiniz?')">
-                            <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
-                            <button class="btn btn-danger btn-icon btn-sm" type="submit" title="Kullanıcıyı sil"><%- icon('trash') %></button>
-                          </form>
-                        <% } %>
+                        <div style="display:flex;gap:.25rem">
+                          <button class="btn btn-outline btn-icon btn-sm" type="button"
+                                  data-reset-user="<%= u.id %>" data-username="<%= u.username %>"
+                                  title="Şifresini sıfırla"><%- icon('key') %></button>
+                          <% if (u.id !== user.id) { %>
+                            <form action="/admin/users/<%= u.id %>/delete" method="post"
+                                  onsubmit="return confirm('<%= u.username %> kullanıcısı ve tüm okuma verileri silinecek. Emin misiniz?')">
+                              <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+                              <button class="btn btn-danger btn-icon btn-sm" type="submit" title="Kullanıcıyı sil"><%- icon('trash') %></button>
+                            </form>
+                          <% } %>
+                        </div>
                       </td>
                     </tr>
                   <% }) %>
@@ -256,6 +261,32 @@
         </section>
       </div>
     </main>
+  </div>
+</div>
+
+<div class="modal" id="password-modal" aria-hidden="true">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="password-modal-title">
+    <div class="modal-head">
+      <h3 id="password-modal-title">Şifre Sıfırla</h3>
+      <button class="btn btn-ghost btn-icon btn-sm" data-modal-close type="button"><%- icon('x') %></button>
+    </div>
+    <form class="modal-body" id="password-form">
+      <input type="hidden" id="reset-user-id" value="">
+      <p style="font-size:.875rem;color:var(--text-soft);margin-bottom:1.25rem">
+        <strong id="reset-username"></strong> kullanıcısına yeni bir şifre atanacak.
+        Favorileri, okuma ilerlemesi ve notları korunur; varsa giriş kilidi kalkar.
+      </p>
+      <div class="field">
+        <label for="reset-password">Yeni şifre</label>
+        <input class="input" type="text" id="reset-password" minlength="10" required
+               autocomplete="off" placeholder="En az 10 karakter">
+        <span class="hint">Kullanıcıya iletebilmeniz için açık yazılır.</span>
+      </div>
+      <div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:.5rem">
+        <button class="btn btn-outline" type="button" id="reset-generate">Rastgele üret</button>
+        <button class="btn btn-primary" type="submit">Şifreyi güncelle</button>
+      </div>
+    </form>
   </div>
 </div>
 
