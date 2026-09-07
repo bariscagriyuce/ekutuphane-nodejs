@@ -1,0 +1,42 @@
+<%- include('partials/head') %>
+<div class="auth">
+  <div class="auth-art">
+    <div class="brand" style="color:#fff;padding:0">
+      <span class="brand-mark"><%- icon('bookopen') %></span> E-Kütüphane
+    </div>
+    <p class="auth-art-quote">Kütüphanenizin tamamı, her cihazda, kaldığınız sayfadan.</p>
+    <p class="auth-art-sub">EPUB · PDF · MOBI · AZW3 — tarayıcıda okuyun, not alın, e-okuyucunuza gönderin.</p>
+  </div>
+
+  <div class="auth-form-wrap">
+    <div class="auth-form">
+      <h1>Tekrar hoş geldiniz</h1>
+      <p class="lede">Kitaplarınıza erişmek için giriş yapın.</p>
+
+      <% if (error) { %>
+        <div class="alert error"><%- icon('alert') %><span><%= error %></span></div>
+      <% } %>
+
+      <form action="/login" method="post">
+        <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+        <input type="hidden" name="next" value="<%= next %>">
+        <div class="field">
+          <label for="username">Kullanıcı adı</label>
+          <input class="input" type="text" id="username" name="username" value="<%= username %>"
+                 required autocomplete="username" autofocus>
+        </div>
+        <div class="field">
+          <label for="password">Şifre</label>
+          <input class="input" type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <button class="btn btn-primary btn-block" type="submit" style="margin-top:.75rem">Giriş Yap</button>
+      </form>
+
+      <button class="btn btn-ghost btn-sm" type="button" data-theme-toggle style="margin-top:1.5rem">
+        <span class="on-dark"><%- icon('sun') %></span><span class="on-light"><%- icon('moon') %></span>
+        Temayı değiştir
+      </button>
+    </div>
+  </div>
+</div>
+<%- include('partials/foot') %>

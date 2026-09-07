@@ -1,0 +1,48 @@
+<aside class="sidebar" id="sidebar">
+  <a href="/" class="brand">
+    <span class="brand-mark"><%- icon('bookopen') %></span>
+    E-Kütüphane
+  </a>
+
+  <nav class="nav-group">
+    <div class="nav-label">Kütüphane</div>
+    <a href="/?shelf=all" class="nav-item <%= currentPath === '/' && (query.shelf || 'all') === 'all' ? 'active' : '' %>">
+      <%- icon('library') %> Tüm Kitaplar <span class="nav-count"><%= counts.total.toLocaleString('tr-TR') %></span>
+    </a>
+    <a href="/?shelf=reading" class="nav-item <%= query.shelf === 'reading' ? 'active' : '' %>">
+      <%- icon('book') %> Okumaya Devam <span class="nav-count"><%= counts.reading %></span>
+    </a>
+    <a href="/?shelf=favorites" class="nav-item <%= query.shelf === 'favorites' ? 'active' : '' %>">
+      <%- icon('heart') %> Favorilerim <span class="nav-count"><%= counts.favorites %></span>
+    </a>
+    <a href="/?shelf=finished" class="nav-item <%= query.shelf === 'finished' ? 'active' : '' %>">
+      <%- icon('checkcircle') %> Bitirdiklerim <span class="nav-count"><%= counts.finished %></span>
+    </a>
+  </nav>
+
+  <% if (user && user.role === 'admin') { %>
+    <nav class="nav-group">
+      <div class="nav-label">Yönetim</div>
+      <a href="/admin" class="nav-item <%= currentPath.startsWith('/admin') ? 'active' : '' %>">
+        <%- icon('shield') %> Yönetici Paneli
+      </a>
+    </nav>
+  <% } %>
+
+  <div class="sidebar-footer">
+    <button class="user-chip" type="button" data-modal-open="profile-modal">
+      <span class="avatar"><%= user.username.slice(0, 2) %></span>
+      <span>
+        <span class="user-chip-name"><%= user.username %></span><br>
+        <span class="user-chip-role"><%= user.role === 'admin' ? 'Yönetici' : 'Okuyucu' %></span>
+      </span>
+    </button>
+    <form action="/logout" method="post" style="margin-top:.35rem">
+      <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+      <button class="nav-item" type="submit" style="width:100%;border:none;background:none;cursor:pointer">
+        <%- icon('logout') %> Çıkış Yap
+      </button>
+    </form>
+  </div>
+</aside>
+<div class="scrim" data-close-nav></div>

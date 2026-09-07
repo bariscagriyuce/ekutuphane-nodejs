@@ -1,0 +1,100 @@
+<%- include('partials/head') %>
+<div class="app" id="app-shell">
+  <%- include('partials/sidebar') %>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn-ghost btn-icon menu-toggle" type="button" data-toggle-nav aria-label="Menü">
+        <%- icon('menu') %>
+      </button>
+
+      <form class="search" id="search-form" action="/" method="get" role="search">
+        <%- icon('search') %>
+        <input type="search" name="q" id="search-input" value="<%= search %>"
+               placeholder="Kitap veya yazar ara…" autocomplete="off" aria-label="Ara">
+        <kbd>/</kbd>
+        <input type="hidden" name="shelf" value="<%= shelf %>">
+        <input type="hidden" name="format" value="<%= format %>">
+        <input type="hidden" name="sort" value="<%= sort %>">
+      </form>
+
+      <div class="topbar-actions">
+        <select class="select hide-sm" id="sort-select" aria-label="Sıralama" style="width:auto">
+          <option value="recent" <%= sort === 'recent' ? 'selected' : '' %>>En yeni</option>
+          <option value="title"  <%= sort === 'title'  ? 'selected' : '' %>>Başlığa göre</option>
+          <option value="author" <%= sort === 'author' ? 'selected' : '' %>>Yazara göre</option>
+          <option value="progress" <%= sort === 'progress' ? 'selected' : '' %>>İlerlemeye göre</option>
+        </select>
+
+        <div class="seg hide-sm" id="view-toggle">
+          <button type="button" data-view="grid" class="active" aria-label="Izgara görünümü"><%- icon('grid') %></button>
+          <button type="button" data-view="list" aria-label="Liste görünümü"><%- icon('list') %></button>
+        </div>
+
+        <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="Temayı değiştir">
+          <span class="on-dark"><%- icon('sun') %></span>
+          <span class="on-light"><%- icon('moon') %></span>
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="content-inner">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title"><%= shelves[shelf].label %></h1>
+            <p class="page-sub" id="result-count">
+              <%= total.toLocaleString('tr-TR') %> kitap<%= search ? ` · “${search}” için sonuçlar` : '' %>
+            </p>
+          </div>
+        </div>
+
+        <div class="chips">
+          <a class="chip <%= !format ? 'active' : '' %>" href="<%= buildUrl({ format: '' }) %>">Tüm formatlar</a>
+          <% formats.forEach(function (f) { %>
+            <a class="chip <%= format === f.format ? 'active' : '' %>" href="<%= buildUrl({ format: f.format }) %>">
+              <%= f.format.toUpperCase() %> <span class="chip-count"><%= f.count.toLocaleString('tr-TR') %></span>
+            </a>
+          <% }) %>
+          <% if (search || format || sort !== 'recent') { %>
+            <a class="chip" href="/?shelf=<%= shelf %>"><%- icon('x') %> Filtreleri temizle</a>
+          <% } %>
+        </div>
+
+        <% if (continueShelf.length) { %>
+          <section style="margin-bottom:2.25rem">
+            <h2 class="section-title"><%- icon('book') %> Kaldığın yerden devam et</h2>
+            <div class="shelf">
+              <% continueShelf.forEach(function (book) { %><%- include('partials/book-card', { book }) %><% }) %>
+            </div>
+          </section>
+          <h2 class="section-title"><%- icon('library') %> Kütüphane</h2>
+        <% } %>
+
+        <div class="grid" id="books-grid" data-shelf="<%= shelf %>">
+          <% books.forEach(function (book) { %><%- include('partials/book-card', { book }) %><% }) %>
+        </div>
+
+        <div class="empty" id="empty-state" <%= books.length ? 'hidden' : '' %>>
+          <%- icon('empty') %>
+          <h3 id="empty-title"><%= search ? 'Sonuç bulunamadı' : 'Burası henüz boş' %></h3>
+          <p id="empty-text"><%= search ? `“${search}” aramasına uygun kitap yok. Farklı bir kelime deneyin.` : emptyMessage %></p>
+          <% if (search || format) { %>
+            <a class="btn btn-outline btn-sm" href="/?shelf=<%= shelf %>" style="margin-top:.75rem">Filtreleri temizle</a>
+          <% } %>
+        </div>
+
+        <div class="loading-row" id="loading-row" hidden><span class="spinner"></span> Yükleniyor…</div>
+        <div class="sentinel" id="sentinel"></div>
+        <div class="pager" id="more-row" <%= total > pageSize ? '' : 'hidden' %>>
+          <button class="btn btn-outline" id="load-more">Daha fazla göster</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/profile-modal') %>
+
+<script id="page-state" type="application/json"><%- JSON.stringify({ shelf, sort, format, search, page, total, pageSize }) %></script>
+<%- include('partials/foot') %>

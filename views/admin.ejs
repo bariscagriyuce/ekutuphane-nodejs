@@ -1,0 +1,264 @@
+<%- include('partials/head') %>
+<div class="app" id="app-shell">
+  <%- include('partials/sidebar') %>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn-ghost btn-icon menu-toggle" type="button" data-toggle-nav aria-label="Menü"><%- icon('menu') %></button>
+      <h1 class="page-title" style="font-size:1.125rem">Yönetici Paneli</h1>
+      <div class="topbar-actions">
+        <a class="btn btn-outline btn-sm" href="/"><%- icon('library') %> Kütüphaneye dön</a>
+        <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="Temayı değiştir">
+          <span class="on-dark"><%- icon('sun') %></span><span class="on-light"><%- icon('moon') %></span>
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="content-inner">
+        <% if (flash) { %>
+          <div class="alert <%= flash.type %>">
+            <%- icon(flash.type === 'error' ? 'alert' : 'checkcircle') %><span><%= flash.message %></span>
+          </div>
+        <% } %>
+
+        <div class="stat-row">
+          <div class="stat"><div class="stat-value"><%= stats.books.toLocaleString('tr-TR') %></div><div class="stat-label">Kitap</div></div>
+          <div class="stat"><div class="stat-value"><%= stats.users %></div><div class="stat-label">Kullanıcı</div></div>
+          <div class="stat"><div class="stat-value"><%= stats.inProgress.toLocaleString('tr-TR') %></div><div class="stat-label">Okunuyor</div></div>
+          <div class="stat"><div class="stat-value"><%= stats.annotations.toLocaleString('tr-TR') %></div><div class="stat-label">Not & vurgu</div></div>
+        </div>
+
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="books">Kitaplar</button>
+          <button class="tab" data-tab="add">Kitap Ekle</button>
+          <button class="tab" data-tab="import">Toplu İçe Aktarma</button>
+          <button class="tab" data-tab="users">Kullanıcılar</button>
+          <button class="tab" data-tab="smtp">E-posta (SMTP)</button>
+        </div>
+
+        <!-- Kitaplar -->
+        <section class="tab-panel active" data-panel="books">
+          <div class="panel">
+            <form action="/admin" method="get" style="display:flex;gap:.6rem;margin-bottom:1rem">
+              <input class="input" type="search" name="q" value="<%= q %>" placeholder="Başlık veya yazara göre ara…">
+              <button class="btn btn-primary" type="submit">Ara</button>
+              <% if (q) { %><a class="btn btn-outline" href="/admin">Temizle</a><% } %>
+            </form>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th style="width:60px">#</th><th>Başlık</th><th>Yazar</th><th style="width:90px">Format</th><th style="width:120px">Eklenme</th><th style="width:60px"></th></tr>
+                </thead>
+                <tbody>
+                  <% books.forEach(function (b) { %>
+                    <tr data-row-book="<%= b.id %>">
+                      <td class="num"><%= b.id %></td>
+                      <td><%= b.title %></td>
+                      <td style="color:var(--text-soft)"><%= b.author %></td>
+                      <td><span class="tag"><%= b.file_format %></span></td>
+                      <td class="num"><%= new Date(b.added_at + 'Z').toLocaleDateString('tr-TR') %></td>
+                      <td>
+                        <button class="btn btn-danger btn-icon btn-sm" data-delete-book="<%= b.id %>"
+                                data-title="<%= b.title %>" title="Kitabı sil"><%- icon('trash') %></button>
+                      </td>
+                    </tr>
+                  <% }) %>
+                  <% if (!books.length) { %>
+                    <tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--text-dim)">Kayıt bulunamadı.</td></tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+
+            <% const pages = Math.ceil(total / limit); if (pages > 1) { %>
+              <div class="pager">
+                <a class="btn btn-outline btn-sm <%= page <= 1 ? 'disabled' : '' %>"
+                   href="/admin?page=<%= page - 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %>"
+                   <%= page <= 1 ? 'aria-disabled="true" style="pointer-events:none;opacity:.4"' : '' %>>Önceki</a>
+                <span class="page-info"><%= page %> / <%= pages %></span>
+                <a class="btn btn-outline btn-sm"
+                   href="/admin?page=<%= page + 1 %><%= q ? '&q=' + encodeURIComponent(q) : '' %>"
+                   <%= page >= pages ? 'aria-disabled="true" style="pointer-events:none;opacity:.4"' : '' %>>Sonraki</a>
+              </div>
+            <% } %>
+          </div>
+        </section>
+
+        <!-- Kitap ekle -->
+        <section class="tab-panel" data-panel="add">
+          <div class="panel">
+            <h3>Tek kitap yükle</h3>
+            <p class="panel-sub">EPUB dosyalarında başlık, yazar ve kapak otomatik okunur; boş bırakabilirsiniz.</p>
+
+            <form action="/admin/books" method="post" enctype="multipart/form-data" id="upload-form">
+              <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+
+              <label class="dropzone" id="dropzone">
+                <input type="file" name="book_file" id="book-file" accept=".epub,.pdf,.mobi,.azw3" required>
+                <div><%- icon('upload') %></div>
+                <strong id="dropzone-name">Dosyayı buraya sürükleyin veya seçmek için tıklayın</strong>
+                <div style="font-size:.8125rem;margin-top:.25rem">EPUB · PDF · MOBI · AZW3</div>
+              </label>
+
+              <div class="form-grid" style="margin-top:1.25rem">
+                <div class="field">
+                  <label for="title">Başlık</label>
+                  <input class="input" type="text" id="title" name="title" placeholder="Boş bırakılırsa dosyadan okunur">
+                </div>
+                <div class="field">
+                  <label for="author">Yazar</label>
+                  <input class="input" type="text" id="author" name="author" placeholder="Boş bırakılırsa dosyadan okunur">
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="cover-file">Kapak görseli (isteğe bağlı)</label>
+                <input class="input" type="file" id="cover-file" name="cover_file" accept="image/*">
+              </div>
+
+              <button class="btn btn-primary" type="submit"><%- icon('plus') %> Kütüphaneye ekle</button>
+            </form>
+          </div>
+        </section>
+
+        <!-- Toplu içe aktarma -->
+        <section class="tab-panel" data-panel="import">
+          <div class="panel">
+            <h3>Klasörden toplu içe aktarma</h3>
+            <p class="panel-sub">
+              Kitapları sunucudaki <code>uploads/import</code> klasörüne kopyalayın, ardından taratıp toplu olarak aktarın.
+              Aktarılan dosyalar import klasöründen silinir.
+            </p>
+
+            <div style="display:flex;gap:.6rem;margin-bottom:1rem;flex-wrap:wrap">
+              <button class="btn btn-outline" id="scan-btn"><%- icon('folder') %> Klasörü tara</button>
+              <button class="btn btn-primary" id="import-btn" disabled><%- icon('download') %> Tümünü içe aktar</button>
+            </div>
+
+            <div class="progressbar" id="import-progress" hidden><span style="width:0"></span></div>
+            <p id="import-summary" style="font-size:.8125rem;color:var(--text-dim);margin:.75rem 0"></p>
+            <div class="import-list" id="import-list" hidden></div>
+          </div>
+        </section>
+
+        <!-- Kullanıcılar -->
+        <section class="tab-panel" data-panel="users">
+          <div class="panel">
+            <h3>Yeni kullanıcı</h3>
+            <p class="panel-sub">Şifre en az 10 karakter olmalıdır.</p>
+            <form action="/admin/users" method="post">
+              <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="new-username">Kullanıcı adı</label>
+                  <input class="input" type="text" id="new-username" name="username" required autocomplete="off">
+                </div>
+                <div class="field">
+                  <label for="new-password">Şifre</label>
+                  <input class="input" type="password" id="new-password" name="password" minlength="10" required autocomplete="new-password">
+                </div>
+                <div class="field">
+                  <label for="new-kindle">E-okuyucu e-postası</label>
+                  <input class="input" type="email" id="new-kindle" name="kindle_email" placeholder="isteğe bağlı">
+                </div>
+                <div class="field">
+                  <label for="new-role">Rol</label>
+                  <select class="select" id="new-role" name="role">
+                    <option value="user">Okuyucu</option>
+                    <option value="admin">Yönetici</option>
+                  </select>
+                </div>
+              </div>
+              <button class="btn btn-primary" type="submit"><%- icon('plus') %> Kullanıcı ekle</button>
+            </form>
+          </div>
+
+          <div class="panel">
+            <h3>Kullanıcılar</h3>
+            <div class="table-wrap" style="margin-top:1rem">
+              <table>
+                <thead><tr><th style="width:60px">#</th><th>Kullanıcı</th><th>Rol</th><th>E-okuyucu</th><th style="width:60px"></th></tr></thead>
+                <tbody>
+                  <% users.forEach(function (u) { %>
+                    <tr>
+                      <td class="num"><%= u.id %></td>
+                      <td><strong><%= u.username %></strong></td>
+                      <td><span class="tag <%= u.role === 'admin' ? 'admin' : '' %>"><%= u.role === 'admin' ? 'Yönetici' : 'Okuyucu' %></span></td>
+                      <td style="color:var(--text-soft)"><%= u.kindle_email || '—' %></td>
+                      <td>
+                        <% if (u.id !== user.id) { %>
+                          <form action="/admin/users/<%= u.id %>/delete" method="post"
+                                onsubmit="return confirm('<%= u.username %> kullanıcısı ve tüm okuma verileri silinecek. Emin misiniz?')">
+                            <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+                            <button class="btn btn-danger btn-icon btn-sm" type="submit" title="Kullanıcıyı sil"><%- icon('trash') %></button>
+                          </form>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SMTP -->
+        <section class="tab-panel" data-panel="smtp">
+          <div class="panel">
+            <h3>SMTP ayarları <span class="tag <%= smtpReady ? 'admin' : '' %>" style="margin-left:.4rem"><%= smtpReady ? 'Yapılandırıldı' : 'Eksik' %></span></h3>
+            <p class="panel-sub">Kitapların Kindle/e-okuyucu adreslerine gönderilebilmesi için gereklidir.</p>
+
+            <form action="/admin/smtp" method="post">
+              <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="smtp_host">Sunucu</label>
+                  <input class="input" type="text" id="smtp_host" name="smtp_host" value="<%= smtp.smtp_host || '' %>" placeholder="smtp.gmail.com">
+                </div>
+                <div class="field">
+                  <label for="smtp_port">Port</label>
+                  <input class="input" type="number" id="smtp_port" name="smtp_port" value="<%= smtp.smtp_port || '587' %>">
+                </div>
+                <div class="field">
+                  <label for="smtp_user">Kullanıcı adı</label>
+                  <input class="input" type="text" id="smtp_user" name="smtp_user" value="<%= smtp.smtp_user || '' %>" autocomplete="off">
+                </div>
+                <div class="field">
+                  <label for="smtp_pass">Şifre</label>
+                  <input class="input" type="password" id="smtp_pass" name="smtp_pass" placeholder="<%= smtp.smtp_pass ? 'Değiştirmek için yazın' : '' %>" autocomplete="new-password">
+                </div>
+                <div class="field">
+                  <label for="smtp_secure">Şifreleme</label>
+                  <select class="select" id="smtp_secure" name="smtp_secure">
+                    <option value="tls" <%= smtp.smtp_secure === 'tls' ? 'selected' : '' %>>STARTTLS (587)</option>
+                    <option value="ssl" <%= smtp.smtp_secure === 'ssl' ? 'selected' : '' %>>SSL/TLS (465)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="smtp_from">Gönderen adresi</label>
+                  <input class="input" type="email" id="smtp_from" name="smtp_from" value="<%= smtp.smtp_from || '' %>">
+                </div>
+              </div>
+              <button class="btn btn-primary" type="submit">Ayarları kaydet</button>
+            </form>
+          </div>
+
+          <div class="panel">
+            <h3>Test e-postası</h3>
+            <p class="panel-sub">Ayarların çalıştığını doğrulamak için bir deneme gönderin.</p>
+            <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+              <input class="input" type="email" id="test-email" placeholder="ornek@eposta.com" style="max-width:320px">
+              <button class="btn btn-outline" id="test-smtp-btn"><%- icon('mail') %> Test gönder</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/profile-modal') %>
+<script type="module" src="/static/js/admin.js"></script>
+<%- include('partials/foot') %>

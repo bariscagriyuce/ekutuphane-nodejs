@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark" data-reader-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <title><%= book.title %> · Okuyucu</title>
+  <script>
+    (function () {
+      try {
+        var rt = localStorage.getItem('readerTheme') || localStorage.getItem('theme') || 'dark';
+        if (['light', 'sepia', 'dark'].indexOf(rt) < 0) rt = 'dark';
+        document.documentElement.setAttribute('data-reader-theme', rt);
+        document.documentElement.setAttribute('data-theme', rt === 'light' ? 'light' : 'dark');
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <link rel="stylesheet" href="/static/css/reader.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+</head>
+<body class="reader-body" data-engine="<%= engine %>">
+
+<header class="rheader">
+  <a class="btn btn-icon btn-sm" href="/" title="Kütüphaneye dön" aria-label="Kütüphaneye dön"><%- icon('chevronleft') %></a>
+
+  <div class="rtitle">
+    <b><%= book.title %></b>
+    <span><%= book.author %></span>
+  </div>
+
+  <% if (engine === 'pdf') { %>
+    <div class="pdf-pagebox hide-xs">
+      <button class="btn btn-icon btn-sm" id="pdf-prev" aria-label="Önceki sayfa"><%- icon('chevronleft') %></button>
+      <input id="pdf-page-input" type="number" min="1" value="1" aria-label="Sayfa numarası">
+      <span>/ <b id="pdf-total">–</b></span>
+      <button class="btn btn-icon btn-sm" id="pdf-next" aria-label="Sonraki sayfa"><%- icon('chevronright') %></button>
+    </div>
+    <button class="btn btn-icon btn-sm" id="pdf-note" title="Bu sayfaya not ekle" aria-label="Bu sayfaya not ekle"><%- icon('plus') %></button>
+  <% } else { %>
+    <button class="btn btn-icon btn-sm" id="btn-toc" title="İçindekiler" aria-label="İçindekiler"><%- icon('list') %></button>
+  <% } %>
+
+  <button class="btn btn-icon btn-sm" id="btn-settings" title="Görünüm ayarları" aria-label="Görünüm ayarları">
+    <span style="font-weight:700;font-size:.9rem;letter-spacing:-.02em">Aa</span>
+  </button>
+  <button class="btn btn-icon btn-sm" id="btn-notes" title="Notlar ve vurgular" aria-label="Notlar"><%- icon('note') %></button>
+  <button class="btn btn-icon btn-sm" id="btn-focus" title="Odak modu (F)" aria-label="Odak modu"><%- icon('bookopen') %></button>
+</header>
+
+<div class="rstage" id="rstage">
+  <!-- İçindekiler -->
+  <aside class="drawer left" id="toc-drawer" aria-hidden="true">
+    <div class="drawer-head">
+      İçindekiler
+      <button class="btn btn-icon btn-sm" data-drawer-close="toc-drawer" aria-label="Kapat"><%- icon('x') %></button>
+    </div>
+    <div class="drawer-body" id="toc-list"></div>
+  </aside>
+
+  <div class="rviewport" id="rviewport">
+    <div class="rloader" id="rloader">
+      <div class="inner"><span class="spinner"></span> Kitap yükleniyor…</div>
+    </div>
+
+    <% if (engine === 'pdf') { %>
+      <div class="pdf-scroll" id="pdf-scroll">
+        <div class="pdf-canvas-wrap"><canvas id="pdf-canvas"></canvas></div>
+      </div>
+    <% } else { %>
+      <foliate-view id="foliate-viewer"></foliate-view>
+    <% } %>
+
+    <button class="rzone prev" id="zone-prev" aria-label="Önceki sayfa"><%- icon('chevronleft') %></button>
+    <button class="rzone next" id="zone-next" aria-label="Sonraki sayfa"><%- icon('chevronright') %></button>
+  </div>
+
+  <!-- Notlar -->
+  <aside class="drawer right" id="notes-drawer" aria-hidden="true">
+    <div class="drawer-head">
+      Notlar &amp; Vurgular
+      <button class="btn btn-icon btn-sm" data-drawer-close="notes-drawer" aria-label="Kapat"><%- icon('x') %></button>
+    </div>
+    <div class="drawer-body" id="notes-list"></div>
+  </aside>
+</div>
+
+<footer class="rfooter">
+  <span class="rchapter" id="chapter-label"></span>
+  <input class="rslider" id="progress-slider" type="range" min="0" max="100" value="0" aria-label="Okuma ilerlemesi">
+  <span class="rpercent" id="progress-label">%0</span>
+</footer>
+
+<button class="btn btn-icon focus-exit" id="btn-focus-exit" title="Odak modundan çık"><%- icon('x') %></button>
+
+<!-- Görünüm ayarları -->
+<div class="popover" id="settings-pop">
+  <div class="pop-row">
+    <div class="pop-label">Tema</div>
+    <div class="pop-controls">
+      <button class="pop-btn theme-light" data-rtheme="light">Açık</button>
+      <button class="pop-btn theme-sepia" data-rtheme="sepia">Sepya</button>
+      <button class="pop-btn theme-dark" data-rtheme="dark">Koyu</button>
+    </div>
+  </div>
+  <% if (engine !== 'pdf') { %>
+  <div class="pop-row">
+    <div class="pop-label">Yazı boyutu <span id="val-font">18px</span></div>
+    <div class="pop-controls">
+      <button class="pop-btn" data-set="font" data-delta="-1">A−</button>
+      <button class="pop-btn" data-set="font" data-delta="1">A+</button>
+    </div>
+  </div>
+  <div class="pop-row">
+    <div class="pop-label">Satır aralığı <span id="val-line">1,6</span></div>
+    <div class="pop-controls">
+      <button class="pop-btn" data-set="line" data-delta="-1">−</button>
+      <button class="pop-btn" data-set="line" data-delta="1">+</button>
+    </div>
+  </div>
+  <div class="pop-row">
+    <div class="pop-label">Sayfa genişliği <span id="val-width">Orta</span></div>
+    <div class="pop-controls">
+      <button class="pop-btn" data-width="720">Dar</button>
+      <button class="pop-btn" data-width="900">Orta</button>
+      <button class="pop-btn" data-width="0">Tam</button>
+    </div>
+  </div>
+  <div class="pop-row">
+    <div class="pop-label">Yazı tipi</div>
+    <div class="pop-controls">
+      <button class="pop-btn" data-font="'Literata', Georgia, serif">Serif</button>
+      <button class="pop-btn" data-font="'Inter', system-ui, sans-serif">Sans</button>
+    </div>
+  </div>
+  <% } else { %>
+  <div class="pop-row">
+    <div class="pop-label">Yakınlaştırma <span id="val-zoom">%100</span></div>
+    <div class="pop-controls">
+      <button class="pop-btn" data-zoom="-1">−</button>
+      <button class="pop-btn" data-zoom="0">Sığdır</button>
+      <button class="pop-btn" data-zoom="1">+</button>
+    </div>
+  </div>
+  <% } %>
+</div>
+
+<!-- Seçim balonu -->
+<div class="sel-tip" id="sel-tip">
+  <span class="dot" data-color="yellow" role="button" title="Sarı vurgu"></span>
+  <span class="dot" data-color="green" role="button" title="Yeşil vurgu"></span>
+  <span class="dot" data-color="pink" role="button" title="Pembe vurgu"></span>
+  <span class="dot" data-color="blue" role="button" title="Mavi vurgu"></span>
+  <button class="btn btn-icon btn-sm" id="tip-note" title="Not ekle"><%- icon('note') %></button>
+</div>
+
+<!-- Not düzenleme -->
+<div class="modal" id="note-modal" aria-hidden="true">
+  <div class="modal-box" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3 id="note-modal-title">Not Ekle</h3>
+      <button class="btn btn-ghost btn-icon btn-sm" data-modal-close type="button"><%- icon('x') %></button>
+    </div>
+    <form class="modal-body" id="note-form">
+      <input type="hidden" id="note-id" value="0">
+      <input type="hidden" id="note-cfi" value="">
+      <input type="hidden" id="note-selected" value="">
+      <div class="field">
+        <label>Seçilen metin</label>
+        <blockquote id="note-quote"
+                    style="background:var(--surface);border-left:3px solid var(--accent);border-radius:8px;
+                           padding:.7rem;font-size:.875rem;max-height:130px;overflow:auto;color:var(--text-soft)"></blockquote>
+      </div>
+      <div class="field">
+        <label>Vurgu rengi</label>
+        <div class="pop-controls" id="note-colors">
+          <button type="button" class="pop-btn" data-color="yellow" style="background:#ffd54a;color:#3a2f00">Sarı</button>
+          <button type="button" class="pop-btn" data-color="green" style="background:#7ee0a5;color:#04321c">Yeşil</button>
+          <button type="button" class="pop-btn" data-color="pink" style="background:#ff9db4;color:#42101f">Pembe</button>
+          <button type="button" class="pop-btn" data-color="blue" style="background:#85c4ff;color:#062b4a">Mavi</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="note-text">Notunuz</label>
+        <textarea class="textarea" id="note-text" placeholder="Bu bölümle ilgili düşünceleriniz…"></textarea>
+      </div>
+      <div style="display:flex;gap:.6rem;justify-content:space-between;margin-top:.5rem">
+        <button class="btn btn-danger" type="button" id="note-delete" hidden>Sil</button>
+        <span style="flex:1"></span>
+        <button class="btn btn-outline" type="button" data-modal-close>Vazgeç</button>
+        <button class="btn btn-primary" type="submit">Kaydet</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script id="reader-state" type="application/json"><%- JSON.stringify({
+  bookId: book.id,
+  format,
+  engine,
+  title: book.title,
+  fileUrl: `/file/${book.id}?inline=1`,
+  annotations,
+  progress: book.progress_value || null,
+  percentage: book.percentage || 0
+}) %></script>
+
+<% if (engine === 'pdf') { %>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<% } %>
+<script type="module" src="/static/js/reader-<%= engine %>.js"></script>
+</body>
+</html>

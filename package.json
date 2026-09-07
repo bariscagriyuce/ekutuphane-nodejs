@@ -1,0 +1,28 @@
+{
+  "name": "e-kutuphane",
+  "version": "2.0.0",
+  "description": "E-Kütüphane — Node.js tabanlı e-kitap kütüphanesi ve tarayıcı içi okuyucu",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "import": "node src/scripts/import-cli.js",
+    "check": "node src/scripts/check-data.js"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "bcryptjs": "^3.0.2",
+    "compression": "^1.8.0",
+    "dotenv": "^17.2.1",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "fast-xml-parser": "^5.2.5",
+    "multer": "^2.0.1",
+    "nodemailer": "^7.0.5"
+  }
+}

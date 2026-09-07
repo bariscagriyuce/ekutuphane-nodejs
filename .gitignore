@@ -1,0 +1,20 @@
+# Bağımlılıklar
+node_modules/
+
+# Gizli bilgiler
+.env
+.session-secret
+admin_password.txt
+
+# Veri: veritabanı ve kitap arşivi depoya girmez
+data/
+uploads/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# İşletim sistemi / editör
+.DS_Store
+*.log
+.idea/
+.vscode/

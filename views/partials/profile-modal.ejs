@@ -1,0 +1,40 @@
+<div class="modal" id="profile-modal" aria-hidden="true">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <div class="modal-head">
+      <h3 id="profile-modal-title">Hesap Ayarları</h3>
+      <button class="btn btn-ghost btn-icon btn-sm" data-modal-close type="button"><%- icon('x') %></button>
+    </div>
+    <form class="modal-body" id="profile-form">
+      <div class="field">
+        <label for="kindle_email">E-okuyucu e-posta adresi</label>
+        <input class="input" type="email" id="kindle_email" name="kindle_email"
+               value="<%= user.kindle_email || '' %>" placeholder="kullanici@kindle.com" autocomplete="email">
+        <span class="hint">Kitapları tek tıkla bu adrese e-posta eki olarak gönderebilirsiniz.</span>
+      </div>
+
+      <div class="field" style="margin-top:1.35rem">
+        <label style="font-size:.9375rem;color:var(--text)">Şifre değiştir</label>
+        <span class="hint">Şifrenizi değiştirmek istemiyorsanız bu alanları boş bırakın.</span>
+      </div>
+      <div class="field">
+        <label for="current_password">Mevcut şifre</label>
+        <input class="input" type="password" id="current_password" name="current_password" autocomplete="current-password">
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="new_password">Yeni şifre</label>
+          <input class="input" type="password" id="new_password" name="new_password" autocomplete="new-password" placeholder="En az 10 karakter">
+        </div>
+        <div class="field">
+          <label for="new_password_confirm">Yeni şifre (tekrar)</label>
+          <input class="input" type="password" id="new_password_confirm" name="new_password_confirm" autocomplete="new-password">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:.5rem">
+        <button class="btn btn-outline" type="button" data-modal-close>Vazgeç</button>
+        <button class="btn btn-primary" type="submit">Kaydet</button>
+      </div>
+    </form>
+  </div>
+</div>

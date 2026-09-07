@@ -1,0 +1,43 @@
+<article class="card" data-book-id="<%= book.id %>">
+  <div class="cover">
+    <span class="badge-format"><%= book.file_format %></span>
+    <button class="fav <%= book.isFavorite ? 'on' : '' %>" data-fav="<%= book.id %>"
+            aria-label="<%= book.isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle' %>" type="button">
+      <%- icon('heart') %>
+    </button>
+
+    <div class="cover-fallback">
+      <div class="fb-title"><%= book.title %></div>
+      <div class="fb-author"><%= book.author %></div>
+    </div>
+    <% if (book.coverUrl) { %>
+      <img src="<%= book.coverUrl %>" alt="" loading="lazy" decoding="async" onerror="this.remove()">
+    <% } %>
+
+    <div class="cover-actions">
+      <% if (book.readable) { %>
+        <a class="btn btn-primary" href="/read/<%= book.id %>"><%- icon('play') %> Oku</a>
+      <% } %>
+      <a class="btn btn-outline btn-icon" href="/file/<%= book.id %>" title="İndir" download><%- icon('download') %></a>
+      <button class="btn btn-outline btn-icon" data-send="<%= book.id %>" title="E-okuyucuya gönder" type="button"><%- icon('send') %></button>
+    </div>
+
+    <% if (book.percentage != null && book.percentage > 0) { %>
+      <div class="progress-strip"><span style="width:<%= Math.min(100, book.percentage) %>%"></span></div>
+    <% } %>
+  </div>
+
+  <div class="card-body">
+    <div class="card-title" title="<%= book.title %>"><%= book.title %></div>
+    <div class="card-author" title="<%= book.author %>"><%= book.author %></div>
+    <% if (book.percentage != null && book.percentage > 0) { %>
+      <div class="card-meta">%<%= Math.min(100, book.percentage) %> okundu</div>
+    <% } %>
+  </div>
+
+  <div class="list-actions">
+    <% if (book.readable) { %><a class="btn btn-sm btn-primary" href="/read/<%= book.id %>">Oku</a><% } %>
+    <a class="btn btn-sm btn-outline btn-icon" href="/file/<%= book.id %>" title="İndir" download><%- icon('download') %></a>
+    <button class="btn btn-sm btn-outline btn-icon" data-send="<%= book.id %>" title="E-okuyucuya gönder" type="button"><%- icon('send') %></button>
+  </div>
+</article>
