@@ -3,6 +3,7 @@ import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import bcrypt from 'bcryptjs';
 import { DB_FILE, PROJECT_ROOT } from './config.js';
+import { searchKey } from './services/search.js';
 import path from 'node:path';
 
 export const db = new DatabaseSync(DB_FILE);
@@ -93,6 +94,36 @@ CREATE INDEX IF NOT EXISTS idx_favorites_user   ON favorites(user_id, created_at
 CREATE INDEX IF NOT EXISTS idx_annotations_ub   ON annotations(user_id, book_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires);
 `);
+
+// --- Türkçe arama anahtarları ------------------------------------------
+// books tablosuna sadeleştirilmiş arama/sıralama sütunları eklenir.
+// Eski PHP veritabanında bu sütunlar yok; ilk açılışta oluşturulup doldurulur.
+const bookColumns = new Set(db.prepare('PRAGMA table_info(books)').all().map((c) => c.name));
+for (const column of ['title_key', 'author_key']) {
+  if (!bookColumns.has(column)) db.exec(`ALTER TABLE books ADD COLUMN ${column} TEXT`);
+}
+
+export function backfillSearchKeys() {
+  const pending = db.prepare('SELECT id, title, author FROM books WHERE title_key IS NULL').all();
+  if (pending.length === 0) return 0;
+
+  const update = db.prepare('UPDATE books SET title_key = ?, author_key = ? WHERE id = ?');
+  db.exec('BEGIN');
+  try {
+    for (const row of pending) update.run(searchKey(row.title), searchKey(row.author), row.id);
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+  return pending.length;
+}
+
+const filled = backfillSearchKeys();
+if (filled > 0) console.log(`  ✔ ${filled} kitap için arama anahtarı oluşturuldu.`);
+
+db.exec('CREATE INDEX IF NOT EXISTS idx_books_title_key  ON books(title_key);');
+db.exec('CREATE INDEX IF NOT EXISTS idx_books_author_key ON books(author_key);');
 
 // --- Varsayılan SMTP ayarları ------------------------------------------
 const defaultSettings = {

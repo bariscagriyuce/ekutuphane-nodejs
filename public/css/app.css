@@ -81,6 +81,10 @@
 
 * { margin: 0; padding: 0; }
 
+/* hidden özniteliği her zaman kazanmalı: .empty, .loading-row, .pager gibi
+   sınıflar display tanımladığı için UA'nın [hidden] kuralını eziyorlardı. */
+[hidden] { display: none !important; }
+
 html { -webkit-text-size-adjust: 100%; }
 
 body {

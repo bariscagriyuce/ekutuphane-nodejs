@@ -12,6 +12,7 @@ import {
   resolveDataPath,
 } from '../config.js';
 import { getEpubMetadata, parseFilename } from './epub.js';
+import { searchKey } from './search.js';
 
 const uid = () => crypto.randomBytes(8).toString('hex');
 const safeName = (name) => name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -112,8 +113,11 @@ export function addBookFromFile(sourcePath, opts = {}) {
 
   try {
     const info = db
-      .prepare('INSERT INTO books (title, author, file_path, file_format, cover_path) VALUES (?, ?, ?, ?, ?)')
-      .run(title, author, targetRel, format, coverPath);
+      .prepare(
+        `INSERT INTO books (title, author, file_path, file_format, cover_path, title_key, author_key)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(title, author, targetRel, format, coverPath, searchKey(title), searchKey(author));
     return { id: Number(info.lastInsertRowid), title, author, format, coverPath };
   } catch (err) {
     fs.rmSync(targetFull, { force: true });

@@ -18,6 +18,8 @@ yoktur; `npm install` ve `npm start` ile çalışır.
 
 - Sol kenar çubuğunda raflar: Tüm Kitaplar, Okumaya Devam, Favorilerim, Bitirdiklerim (canlı sayaçlarla)
 - Yazarken arama (sayfa yenilenmez), format çipleri, sıralama (yeni / başlık / yazar / ilerleme)
+- Türkçe uyumlu arama: "şefkat" ile "Sefkat_Gunesi", "gülen" ile "Gulen" eşleşir;
+  kelimeler sırasız aranabilir ("gulen tereddutler")
 - Izgara ⇄ liste görünümü, sonsuz kaydırma + "Daha fazla göster" düğmesi
 - Ana sayfada "Kaldığın yerden devam et" rafı
 - Açık / koyu tema, tam duyarlı (mobil çekmece menü), `/` ile aramaya odaklanma
@@ -174,7 +176,7 @@ bir ters vekil sunucu (nginx/Caddy) kullanın.
 │   ├── session-store.js     express-session için SQLite deposu
 │   ├── icons.js             Şablonlarda kullanılan SVG ikonlar
 │   ├── middleware/          auth.js (yetki), csrf.js
-│   ├── services/            books.js, epub.js, mailer.js, import.js
+│   ├── services/            books.js, epub.js, mailer.js, import.js, search.js
 │   ├── routes/              auth, library, reader, api, admin
 │   └── scripts/             import-cli.js
 ├── views/                   EJS şablonları (+ partials/)

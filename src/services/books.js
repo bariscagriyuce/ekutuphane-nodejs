@@ -2,11 +2,14 @@
 import path from 'node:path';
 import { db } from '../db.js';
 import { READABLE_FORMATS } from '../config.js';
+import { searchTokens } from './search.js';
 
+// Sıralamada da sadeleştirilmiş anahtarlar kullanılır; ham UTF-8'de "Şefkat"
+// "Z"den sonra gelirdi.
 export const SORTS = {
   recent: 'b.added_at DESC, b.id DESC',
-  title: 'b.title COLLATE NOCASE ASC',
-  author: 'b.author COLLATE NOCASE ASC, b.title COLLATE NOCASE ASC',
+  title: 'COALESCE(b.title_key, b.title) ASC, b.id ASC',
+  author: 'COALESCE(b.author_key, b.author) ASC, COALESCE(b.title_key, b.title) ASC',
   progress: 'COALESCE(p.percentage, -1) DESC, b.added_at DESC',
 };
 
@@ -53,9 +56,15 @@ export function listBooks({
   if (shelf === 'reading') where.push('p.percentage IS NOT NULL AND p.percentage > 0 AND p.percentage < 98');
   if (shelf === 'finished') where.push('p.percentage >= 98');
 
-  if (search.trim()) {
-    where.push('(b.title LIKE :search OR b.author LIKE :search)');
-    params.search = `%${search.trim()}%`;
+  // Arama: terim de kayıtlar da aynı sadeleştirmeden geçtiği için
+  // "şefkat" ile "Sefkat_Gunesi" eşleşir. Kelimeler AND'lenir, böylece
+  // başlık ve yazardan karışık kelimeler birlikte aranabilir.
+  for (const [index, token] of searchTokens(search).entries()) {
+    const name = `tok${index}`;
+    where.push(
+      `(COALESCE(b.title_key, b.title) || ' ' || COALESCE(b.author_key, b.author, '')) LIKE :${name}`
+    );
+    params[name] = `%${token}%`;
   }
   if (format.trim()) {
     where.push('LOWER(b.file_format) = :format');
