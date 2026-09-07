@@ -156,6 +156,12 @@ gönderilir. Uygulama ters vekil arkasında çalıştığını varsayar
 (`trust proxy`), yani panelin SSL'i açık olmalıdır. Giriş yaptıktan sonra
 sürekli giriş sayfasına dönüyorsanız ilk bakılacak yer budur.
 
+**Durdurma seçeneği olmayan panellerde veritabanı değiştirme:** Yeni
+veritabanını farklı bir adla yükleyip (`database2.sqlite`) ortam
+değişkenlerine `DB_FILE` olarak tam yolunu verin, sonra yeniden başlatın.
+`DATA_ROOT` aynı kaldığı için `uploads/` etkilenmez; eski dosyalar el
+sürülmeden devre dışı kalır.
+
 **Hazır veritabanı yüklerken:** SQLite WAL kipinde çalışır; veritabanının
 yanında `database.sqlite-wal` ve `database.sqlite-shm` dosyaları oluşur.
 Mevcut bir `database.sqlite`'ın üzerine yenisini kopyalarken **bu iki dosyayı
@@ -163,7 +169,9 @@ da silin**, aksi hâlde eski WAL yeni dosyanın üzerine uygulanır ve uygulama
 eski (çoğu zaman boş) veriyi görmeye devam eder. Uygulamayı durdurun,
 üç dosyayı da temizleyin, yeni `database.sqlite`'ı koyun, sonra başlatın.
 Açılış log'undaki `İçerik : N kullanıcı · N kitap` satırı hangi veriyi
-okuduğunu söyler.
+okuduğunu söyler. Uygulama SIGTERM aldığında WAL'i ana dosyaya işleyip
+kapandığı için, düzgün bir yeniden başlatmanın ardından geride tek parça
+bir `database.sqlite` kalır.
 
 **Disk:** Kitap arşivi hosting kotanıza dâhildir. Yükleme yapmadan önce
 paketinizin disk alanını kontrol edin.

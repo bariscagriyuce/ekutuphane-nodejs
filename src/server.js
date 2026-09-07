@@ -84,7 +84,7 @@ app.use((err, req, res, _next) => {
   res.status(500).render('error', { title: 'Sunucu Hatası', message });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   // Açılışta ne okunduğunu yazmak, yanlış veritabanına bakıldığını
   // (ör. yükleme sonrası bayat -wal dosyası) tek bakışta görünür kılar.
   let summary = '';
@@ -101,3 +101,36 @@ app.listen(PORT, () => {
   console.log(`     Veritabanı   : ${DB_FILE}`);
   console.log(`     İçerik       : ${summary}\n`);
 });
+
+/**
+ * Düzgün kapanış: WAL'i ana dosyaya işleyip veritabanını kapatır.
+ *
+ * Paylaşımlı hostinglerde uygulamayı durdurma seçeneği yok, yalnızca
+ * "Restart" var. Kapanışta WAL boşaltılmazsa yanında kalan -wal dosyası
+ * sonradan yüklenen bir database.sqlite'ın üzerine uygulanıyor ve uygulama
+ * eski veriyi okumaya devam ediyor. Bu kanca, yeniden başlatmanın ardında
+ * temiz ve tek parça bir veritabanı bırakır.
+ */
+let shuttingDown = false;
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  server.close(() => {
+    try {
+      db.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+      db.close();
+      console.log(`\n  ${signal}: veritabanı düzgün kapatıldı.\n`);
+    } catch (err) {
+      console.error(`  ${signal}: veritabanı kapatılırken hata: ${err.message}`);
+    }
+    process.exit(0);
+  });
+
+  // Açık bağlantılar kapanmıyorsa da takılıp kalma
+  setTimeout(() => process.exit(0), 8000).unref();
+}
+
+for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP']) {
+  process.on(signal, () => shutdown(signal));
+}
