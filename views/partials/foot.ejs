@@ -1,5 +1,5 @@
   <div class="toasts" id="toasts" aria-live="polite"></div>
-  <script src="/static/js/app.js" type="module"></script>
+  <script src="<%= asset('/static/js/app.js') %>" type="module"></script>
   <%- typeof extraScripts !== 'undefined' ? extraScripts : '' %>
 </body>
 </html>

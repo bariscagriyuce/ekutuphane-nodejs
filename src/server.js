@@ -12,6 +12,7 @@ import { SqliteStore } from './session-store.js';
 import { csrf } from './middleware/csrf.js';
 import { localsMiddleware } from './middleware/auth.js';
 import { icon } from './icons.js';
+import { asset, assetVersion } from './assets.js';
 
 import { router as authRoutes } from './routes/auth.js';
 import { router as libraryRoutes } from './routes/library.js';
@@ -27,17 +28,32 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(PROJECT_ROOT, 'views'));
 app.disable('x-powered-by');
 app.locals.icon = icon;
+app.locals.asset = asset;
 
 app.use(compression());
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(express.json({ limit: '2mb' }));
+// Statik dosyalar: bağlantılar ?v=<sürüm> taşıdığı için içerik değişince URL
+// de değişir. Yine de "no-cache" veriyoruz; böylece sürümsüz istekler (ör. bir
+// JS modülünün içindeki import) her seferinde doğrulanır — değişmemişse 304
+// döner, değişmişse yenisi iner. Hiçbir durumda bayat dosya kullanılmaz.
 app.use(
   '/static',
   express.static(path.join(PROJECT_ROOT, 'public'), {
-    maxAge: IS_PROD ? '7d' : 0,
     etag: true,
+    lastModified: true,
+    setHeaders(res) {
+      res.setHeader('Cache-Control', 'no-cache');
+    },
   })
 );
+
+// HTML yanıtları kullanıcıya özeldir; ne tarayıcı ne de aradaki bir vekil
+// sunucu saklamalı.
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, private');
+  next();
+});
 
 app.use(
   session({
@@ -99,7 +115,8 @@ const server = app.listen(PORT, () => {
   console.log(`\n  📚 E-Kütüphane  http://localhost:${PORT}`);
   console.log(`     Veri klasörü : ${DATA_ROOT}`);
   console.log(`     Veritabanı   : ${DB_FILE}`);
-  console.log(`     İçerik       : ${summary}\n`);
+  console.log(`     İçerik       : ${summary}`);
+  console.log(`     Varlık sürümü: ${assetVersion()}\n`);
 });
 
 /**

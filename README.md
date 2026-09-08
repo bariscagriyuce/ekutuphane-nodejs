@@ -179,6 +179,22 @@ bir `database.sqlite` kalır.
 **Disk:** Kitap arşivi hosting kotanıza dâhildir. Yükleme yapmadan önce
 paketinizin disk alanını kontrol edin.
 
+## Önbellek
+
+Statik dosya bağlantıları `?v=<sürüm>` taşır; sürüm `public/` altındaki en son
+değişiklik zamanından üretilir, yani her dağıtımda değişir. Tarayıcı ve aradaki
+vekil sunucular yeni dosyayı çekmek zorunda kalır — dağıtımdan sonra sayfayı
+gizli sekmede açmaya ya da önbellek temizlemeye gerek yoktur.
+
+Başlıklar:
+
+| Kaynak | `Cache-Control` |
+|---|---|
+| CSS / JS (`/static`) | `no-cache` + ETag — değişmemişse 304, değişmişse yeni sürüm |
+| Kapak görselleri | `private, max-age=86400` (dosya adları benzersiz) |
+| Kitap dosyaları | `private, max-age=0` |
+| HTML sayfaları | `no-store, private` — oturuma özel içerik saklanmaz |
+
 ## Güvenlik
 
 - Tüm durum değiştiren istekler oturum tabanlı CSRF token'ı ister
