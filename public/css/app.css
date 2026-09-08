@@ -184,7 +184,11 @@ svg { flex-shrink: 0; }
 .app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
 
 .sidebar {
-  position: sticky; top: 0; height: 100vh; height: 100dvh;
+  position: sticky; top: 0;
+  /* svh: tarayıcı araç çubukları görünürken bile tam sığan yükseklik.
+     100vh ve 100dvh mobilde çubuğun altındaki alanı da sayabildiği için
+     alt kısım (kullanıcı adı, çıkış) ekrandan taşıyordu. */
+  height: 100vh; height: 100svh;
   display: flex; flex-direction: column;
   background: var(--bg-elevated);
   border-right: 1px solid var(--border);
