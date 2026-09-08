@@ -249,6 +249,28 @@ function findNoteBlock(el) {
   return { el: fallback, isNote: false };
 }
 
+const metinVar = (node) => Boolean((node?.textContent || '').trim());
+
+/**
+ * Hedef kutu boşsa notu sonraki kardeşlerde arar.
+ *
+ * MOBI/Kindle kitaplarında dipnot hedefi boş bir çapadır
+ * (<p><a id="filepos0000314881"></a></p>) ve notun metni bir sonraki
+ * paragraftadır. Yeni bir çapa işaretine rastlarsak dururuz; aksi hâlde
+ * bir sonraki notun metnini gösterirdik.
+ */
+function noteBodyFrom(el) {
+  if (metinVar(el)) return el;
+  let node = el;
+  for (let i = 0; i < 6; i += 1) {
+    node = node?.nextElementSibling;
+    if (!node) break;
+    if (metinVar(node)) return node;
+    if (node.querySelector?.('a[id]')) break; // sonraki notun sınırı
+  }
+  return null;
+}
+
 /** Bağlantı metni "24", "*", "HAŞİYE" gibi kısa bir işaret mi? */
 function looksLikeMarker(text) {
   const t = (text || '').trim();
@@ -278,7 +300,12 @@ async function resolveNote(a, href) {
   const targetEl = target?.nodeType === 1 ? target : target?.startContainer?.parentElement;
   if (!targetEl) return null;
 
-  const { el, isNote } = findNoteBlock(targetEl);
+  const { el: blok, isNote } = findNoteBlock(targetEl);
+
+  // Çapa hiçbir blok kutunun içinde olmayabilir (MOBI'de doğrudan <body>
+  // altında duran <a id="filepos…"></a> gibi); o zaman aramaya çapanın
+  // kendisinden başlarız.
+  const el = noteBodyFrom(blok || targetEl);
   if (!el) return null;
 
   const text = el.textContent?.trim() || '';

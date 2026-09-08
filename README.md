@@ -34,7 +34,7 @@ yoktur; `npm install` ve `npm start` ile çalışır.
 - Yazı boyutu, satır aralığı, sayfa genişliği, serif/sans yazı tipi ayarları (tarayıcıda saklanır)
 - İçindekiler paneli, notlar & vurgular paneli
 - Dipnotlar (24, 25, HAŞİYE …) tıklanınca sayfa sonuna atlamak yerine
-  bulunduğun yerde küçük bir kartta açılır
+  bulunduğun yerde küçük bir kartta açılır (EPUB ve MOBI/AZW3 kalıpları)
 - Dört renkte vurgu — foliate-js'in kendi katmanı kullanılır, metin DOM'una dokunulmaz
 - Vurguya tıklayınca not düzenleme, panelden vurguya atlama
 - Klavye: `←` `→` sayfa, `F` odak modu, `Esc` kapat; mobilde kaydırma hareketi ve kenardaki ok düğmeleri
