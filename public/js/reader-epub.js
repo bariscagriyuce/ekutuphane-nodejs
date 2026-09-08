@@ -134,6 +134,174 @@ notes.onChange = () => {
   drawAll();
 };
 
+/* ---------- Dipnotlar ----------
+   Kitap içi bağlantılar (24, 25, HAŞİYE …) tıklanınca sayfanın sonuna
+   atlamak yerine notun içeriğini bulunduğun yerde küçük bir kartta gösterir.
+   foliate'in "link" olayı iptal edilebilir; iptal edilirse kendi gezinmesini
+   yapmaz. Not çıkarılamazsa normal gezinmeye düşülür. */
+
+/** Not kutusunun içeriğini güvenli hâle getirir (betik/olay/bağlantı temizliği). */
+function sanitizeNote(node) {
+  const clone = node.cloneNode(true);
+  for (const el of clone.querySelectorAll('script, style, iframe, object, embed, video, audio')) el.remove();
+  for (const el of clone.querySelectorAll('*')) {
+    for (const attr of [...el.attributes]) {
+      if (/^on/i.test(attr.name) || attr.name === 'srcset') el.removeAttribute(attr.name);
+    }
+  }
+  // Notun başındaki geri-dönüş bağlantısı (kartta başlıkta zaten var) atılır,
+  // diğer bağlantılar düz metne çevrilir (karttan gezinme yapılmamalı).
+  for (const a of clone.querySelectorAll('a')) {
+    const isBack = BACKLINK.test(String(a.getAttribute('class') || '') + ' ' + String(a.getAttribute('href') || ''));
+    if (isBack) a.remove();
+    else {
+      const span = clone.ownerDocument.createElement('span');
+      span.innerHTML = a.innerHTML;
+      a.replaceWith(span);
+    }
+  }
+  return clone.innerHTML.trim();
+}
+
+/** Gövde hâlâ "23 " gibi bir işaretle başlıyorsa onu da kırpar. */
+function stripLeadingMarker(html, marker) {
+  const trimmed = String(marker || '').trim();
+  if (!trimmed) return html;
+  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return html.replace(new RegExp('^(\\s*(?:<[^>]+>\\s*)*)' + escaped + '[\\s.:)\\]]*', 'i'), '$1');
+}
+
+const NOTE_CLASS = /footnote|endnote|rearnote|dipnot|hasiye|haşiye/i;
+const NOTE_TYPE = /footnote|endnote|rearnote|note/i;
+const BACKLINK = /backlink|footnoteanchor|noteback/i;
+
+/** Hedef düğümden yukarı çıkarak notun gövdesini bulur. */
+function findNoteBlock(el) {
+  let node = el;
+  let fallback = null;
+  while (node && node.nodeType === 1 && node.tagName !== 'BODY') {
+    const cls = String(node.getAttribute('class') || '');
+    const type = String(node.getAttribute('epub:type') || '') + ' ' + String(node.getAttribute('role') || '');
+    // Çoğul sarmalayıcı (tüm notlar) yerine tekil not kutusunu yakalarız:
+    // döngü en yakın eşleşmede durduğu için doğru olan seçilir.
+    if (NOTE_CLASS.test(cls) || NOTE_TYPE.test(type) || node.tagName === 'ASIDE') {
+      return { el: node, isNote: true };
+    }
+    if (!fallback && /^(P|LI|DD|DIV|TD|ASIDE)$/.test(node.tagName)) fallback = node;
+    node = node.parentElement;
+  }
+  return { el: fallback, isNote: false };
+}
+
+/** Bağlantı metni "24", "*", "HAŞİYE" gibi kısa bir işaret mi? */
+function looksLikeMarker(text) {
+  const t = (text || '').trim();
+  return t.length > 0 && t.length <= 8 && !/\s{2,}/.test(t);
+}
+
+async function documentForSection(index) {
+  if (index === currentIndex && currentDoc) return currentDoc;
+  try {
+    return await book.sections?.[index]?.createDocument?.();
+  } catch {
+    return null;
+  }
+}
+
+/** @returns {Promise<{title:string, html:string}|null>} */
+async function resolveNote(a, href) {
+  if (BACKLINK.test(String(a.getAttribute('class') || '') + ' ' + href)) return null;
+
+  const resolved = book?.resolveHref?.(href);
+  if (!resolved || resolved.index == null) return null;
+
+  const doc = await documentForSection(resolved.index);
+  if (!doc) return null;
+
+  const target = typeof resolved.anchor === 'function' ? resolved.anchor(doc) : null;
+  const targetEl = target?.nodeType === 1 ? target : target?.startContainer?.parentElement;
+  if (!targetEl) return null;
+
+  const { el, isNote } = findNoteBlock(targetEl);
+  if (!el) return null;
+
+  const text = el.textContent?.trim() || '';
+  if (!text) return null;
+  // Not gibi işaretlenmemişse yalnızca kısa işaretli ve makul uzunluktaki
+  // hedefleri kart olarak gösteririz; gerisi normal gezinme olmalı.
+  if (!isNote && !(looksLikeMarker(a.textContent) && text.length < 1500)) return null;
+
+  const title = (a.textContent || '').trim() || 'Not';
+  return { title, html: stripLeadingMarker(sanitizeNote(el), title) };
+}
+
+function showNotePopup({ title, html }, anchorRect) {
+  const pop = $('#note-popup');
+  $('#note-popup-title').textContent = title;
+  $('#note-popup-body').innerHTML = html;
+  pop.classList.add('open');
+
+  // Dar ekranda alttan açılan sayfa; geniş ekranda bağlantının yanında kart
+  if (window.matchMedia('(max-width: 640px)').matches || !anchorRect) {
+    pop.classList.add('sheet');
+    pop.style.top = pop.style.left = '';
+    return;
+  }
+  pop.classList.remove('sheet');
+  pop.style.top = '0px';
+  pop.style.left = '0px';
+  const w = pop.offsetWidth;
+  const h = pop.offsetHeight;
+  let top = anchorRect.bottom + 10;
+  if (top + h > window.innerHeight - 12) top = Math.max(12, anchorRect.top - h - 10);
+  let left = anchorRect.left + anchorRect.width / 2 - w / 2;
+  left = Math.min(Math.max(12, left), window.innerWidth - w - 12);
+  pop.style.top = `${top}px`;
+  pop.style.left = `${left}px`;
+}
+
+export function hideNotePopup() {
+  $('#note-popup')?.classList.remove('open');
+}
+
+$('#note-popup-close')?.addEventListener('click', hideNotePopup);
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#note-popup')) hideNotePopup();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hideNotePopup();
+});
+// Sayfa değişince veya bölüm yüklenince kart açık kalmasın
+window.addEventListener('page-next', hideNotePopup);
+window.addEventListener('page-prev', hideNotePopup);
+
+viewer.addEventListener('link', (e) => {
+  const { a, href } = e.detail;
+  if (!href) return;
+
+  // Kararı eşzamanlı vermek zorundayız (olay iptal edilebilir olduğu için).
+  // Bu yüzden önce iptal edip, not çıkaramazsak gezinmeyi kendimiz yaparız.
+  e.preventDefault();
+
+  const rect = (() => {
+    try {
+      const r = a.getBoundingClientRect();
+      const frame = a.ownerDocument?.defaultView?.frameElement;
+      const off = frame ? frame.getBoundingClientRect() : { top: 0, left: 0 };
+      return { top: r.top + off.top, bottom: r.bottom + off.top, left: r.left + off.left, width: r.width };
+    } catch {
+      return null;
+    }
+  })();
+
+  resolveNote(a, href)
+    .then((note) => {
+      if (note) showNotePopup(note, rect);
+      else viewer.goTo(href).catch(() => {});
+    })
+    .catch(() => viewer.goTo(href).catch(() => {}));
+});
+
 /* ---------- Sayfa gezinme ---------- */
 const turnDistance = () => Math.max(300, Math.floor(($('#rviewport')?.clientHeight || window.innerHeight) * 0.88));
 const next = () => viewer?.next(turnDistance());
@@ -203,6 +371,9 @@ function hookSelection(doc) {
   doc.addEventListener('touchend', handle);
   doc.addEventListener('mousedown', (e) => {
     if (!e.target.closest?.('mark.hl')) hideTip();
+    // Dipnot kartı iframe dışında olduğu için tıklama olayı üst belgeye
+    // ulaşmıyor; burada da kapatmak gerekiyor.
+    if (!e.target.closest?.('a')) hideNotePopup();
   });
   window.addEventListener('clear-selection', () => doc.getSelection()?.removeAllRanges());
 }
@@ -260,6 +431,7 @@ async function init() {
     viewer.addEventListener('load', (e) => {
       currentDoc = e.detail.doc;
       currentIndex = e.detail.index;
+      hideNotePopup();
       applyStyles();
       applyDirection(currentDoc);
       scaleStandaloneImages(currentDoc);
