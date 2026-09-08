@@ -29,6 +29,7 @@ app.set('views', path.join(PROJECT_ROOT, 'views'));
 app.disable('x-powered-by');
 app.locals.icon = icon;
 app.locals.asset = asset;
+app.locals.assetVersion = assetVersion;
 
 app.use(compression());
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));

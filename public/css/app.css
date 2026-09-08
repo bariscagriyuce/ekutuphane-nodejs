@@ -96,6 +96,7 @@ body {
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  min-height: 100svh;
 }
 
 h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; line-height: 1.25; }
@@ -188,7 +189,7 @@ svg { flex-shrink: 0; }
   /* svh: tarayıcı araç çubukları görünürken bile tam sığan yükseklik.
      100vh ve 100dvh mobilde çubuğun altındaki alanı da sayabildiği için
      alt kısım (kullanıcı adı, çıkış) ekrandan taşıyordu. */
-  height: 100vh; height: 100svh;
+  height: 100vh; height: 100svh; height: min(100svh, var(--app-h, 100svh));
   display: flex; flex-direction: column;
   background: var(--bg-elevated);
   border-right: 1px solid var(--border);
@@ -528,7 +529,8 @@ svg { flex-shrink: 0; }
 
 /* ============ 10. Giriş sayfası ============ */
 .auth {
-  min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+  min-height: 100svh; display: grid; grid-template-columns: 1fr 1fr;
 }
 .auth-art {
   position: relative; overflow: hidden;

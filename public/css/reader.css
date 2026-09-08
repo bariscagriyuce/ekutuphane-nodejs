@@ -11,8 +11,11 @@
 [data-reader-theme='dark']  { --paper: #14171e; --ink: #dfe4ec; --paper-soft: #1c212b; }
 
 body.reader-body {
-  /* svh: araç çubukları açıkken bile alt ilerleme çubuğu ekranda kalır */
-  height: 100vh; height: 100svh;
+  /* app.css'teki body { min-height: 100vh } burada sıfırlanmalı: min-height
+     her zaman height'ı ezdiği için svh/dvh ayarları sessizce etkisiz kalıyor,
+     gövde araç çubuğunun altına taşıyor ve alt ilerleme çubuğu görünmüyordu. */
+  min-height: 0;
+  height: 100vh; height: 100svh; height: min(100svh, var(--app-h, 100svh));
   overflow: hidden;
   display: flex; flex-direction: column;
   background: var(--paper);

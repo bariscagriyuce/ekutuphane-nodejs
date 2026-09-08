@@ -14,6 +14,25 @@
         document.documentElement.setAttribute('data-theme', rt === 'light' ? 'light' : 'dark');
       } catch (e) {}
     })();
+    // Yükseklik güvencesi: bazı mobil tarayıcılar 100svh/100dvh için de
+    // araç çubuğunun altındaki alanı sayıyor ve alt çubuk ekrandan taşıyor.
+    // innerHeight her zaman gerçek görünür yüksekliği verir; CSS tarafında
+    // min(100svh, --app-h) ile hangisi küçükse o kullanılır. Bu betik hiç
+    // çalışmazsa da düzen 100svh ile ayakta kalır.
+    (function () {
+      var set = function () {
+        // innerHeight parmakla yakınlaştırmadan etkilenmez; araç çubuğu
+        // açılıp kapandığında ise doğru değeri verir.
+        document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px');
+      };
+      set();
+      window.addEventListener('resize', set);
+      window.addEventListener('orientationchange', set);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', set);
+      }
+      document.addEventListener('DOMContentLoaded', set);
+    })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -154,6 +173,10 @@
     </div>
   </div>
   <% } %>
+  <div style="margin-top:.9rem;padding-top:.7rem;border-top:1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+              font-size:.6875rem;opacity:.45;text-align:center">
+    sürüm <%= assetVersion() %>
+  </div>
 </div>
 
 <!-- Seçim balonu -->
