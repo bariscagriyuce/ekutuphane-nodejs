@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="csrf-token" content="<%= csrfToken %>">
   <title><%= book.title %> · Okuyucu</title>
-  <script>
+  <script nonce="<%= cspNonce %>">
     (function () {
       try {
         var rt = localStorage.getItem('readerTheme') || localStorage.getItem('theme') || 'dark';
@@ -239,7 +239,7 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script id="reader-state" type="application/json"><%- JSON.stringify({
+<script id="reader-state" type="application/json"><%- jsonForScript({
   bookId: book.id,
   format,
   engine,

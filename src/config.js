@@ -56,6 +56,22 @@ export const PORT = Number(process.env.PORT || 3000);
 export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const IS_PROD = NODE_ENV === 'production';
 
+/**
+ * Ters vekil güveni. Vekil arkasındayken (hosting panelleri, nginx) 1 olmalı ki
+ * gerçek istemci IP'si ve HTTPS bilgisi X-Forwarded-* başlıklarından okunsun.
+ * Uygulama doğrudan internete açıksa 0/false verin; aksi hâlde istemci
+ * X-Forwarded-For ile IP'sini seçip giriş kilidini atlatabilir.
+ */
+function resolveTrustProxy() {
+  const raw = String(process.env.TRUST_PROXY ?? '').trim().toLowerCase();
+  if (raw === '') return 1;
+  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  if (['true', 'yes', 'on'].includes(raw)) return true;
+  if (/^\d+$/.test(raw)) return Number(raw);
+  return raw; // ör. "loopback", "10.0.0.0/8"
+}
+export const TRUST_PROXY = resolveTrustProxy();
+
 // Oturum gizli anahtarı: üretimde .env üzerinden verilmeli.
 // Verilmezse dosyaya yazılan rastgele bir anahtar üretilir (yeniden başlatmada
 // oturumların düşmemesi için kalıcıdır).
@@ -85,7 +101,8 @@ export const BOOK_FORMATS = ['epub', 'pdf', 'mobi', 'azw3'];
 export const COVER_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
 // Giriş güvenliği
-export const LOGIN_MAX_ATTEMPTS = 5;
+export const LOGIN_MAX_ATTEMPTS = 5;          // aynı kullanıcı adı + IP
+export const LOGIN_MAX_ATTEMPTS_PER_USER = 20; // aynı kullanıcı adı, IP'den bağımsız
 export const LOGIN_LOCKOUT_MINUTES = 15;
 
 // Listeleme

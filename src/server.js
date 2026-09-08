@@ -6,10 +6,11 @@ import compression from 'compression';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PORT, PROJECT_ROOT, SESSION_SECRET, IS_PROD, DATA_ROOT, DB_FILE } from './config.js';
+import { PORT, PROJECT_ROOT, SESSION_SECRET, IS_PROD, DATA_ROOT, DB_FILE, TRUST_PROXY } from './config.js';
 import { db } from './db.js';
 import { SqliteStore } from './session-store.js';
 import { csrf } from './middleware/csrf.js';
+import { securityHeaders, jsonForScript } from './middleware/security.js';
 import { localsMiddleware } from './middleware/auth.js';
 import { icon } from './icons.js';
 import { asset, assetVersion } from './assets.js';
@@ -23,15 +24,17 @@ import { router as adminRoutes } from './routes/admin.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-app.set('trust proxy', 1);
+app.set('trust proxy', TRUST_PROXY);
 app.set('view engine', 'ejs');
 app.set('views', path.join(PROJECT_ROOT, 'views'));
 app.disable('x-powered-by');
 app.locals.icon = icon;
 app.locals.asset = asset;
 app.locals.assetVersion = assetVersion;
+app.locals.jsonForScript = jsonForScript;
 
 app.use(compression());
+app.use(securityHeaders);
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(express.json({ limit: '2mb' }));
 // Statik dosyalar: bağlantılar ?v=<sürüm> taşıdığı için içerik değişince URL

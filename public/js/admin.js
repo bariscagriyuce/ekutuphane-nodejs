@@ -176,6 +176,14 @@ $('#test-smtp-btn')?.addEventListener('click', async (e) => {
   toast(r.message || (r.success ? 'Gönderildi.' : 'Gönderilemedi.'), r.success ? 'success' : 'error');
 });
 
+/* ---------- Onay isteyen formlar (satır içi onsubmit yerine; CSP) ---------- */
+document.addEventListener('submit', (e) => {
+  const form = e.target;
+  if (form instanceof HTMLFormElement && form.dataset.confirm && !confirm(form.dataset.confirm)) {
+    e.preventDefault();
+  }
+});
+
 /* ---------- Yükleme sırasında geri bildirim ---------- */
 $('#upload-form')?.addEventListener('submit', (e) => {
   const btn = e.currentTarget.querySelector('button[type="submit"]');

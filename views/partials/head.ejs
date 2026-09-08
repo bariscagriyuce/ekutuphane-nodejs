@@ -6,7 +6,12 @@
   <meta name="csrf-token" content="<%= csrfToken %>">
   <meta name="color-scheme" content="dark light">
   <title><%= title %> · E-Kütüphane</title>
-  <script>
+  <script nonce="<%= cspNonce %>">
+    // Yüklenemeyen kapak görselini kaldır (satır içi onerror yerine; CSP)
+    document.addEventListener('error', function (e) {
+      var t = e.target;
+      if (t && t.tagName === 'IMG' && t.hasAttribute('data-cover')) t.remove();
+    }, true);
     // FOUC olmadan tema uygula
     (function () {
       try {

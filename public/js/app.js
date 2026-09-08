@@ -165,7 +165,7 @@ export function cardHTML(book) {
         <div class="fb-title">${esc(book.title)}</div>
         <div class="fb-author">${esc(book.author)}</div>
       </div>
-      ${book.coverUrl ? `<img src="${esc(book.coverUrl)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}
+      ${book.coverUrl ? `<img src="${esc(book.coverUrl)}" alt="" loading="lazy" decoding="async" data-cover>` : ''}
       <div class="cover-actions">
         ${readBtn}
         <a class="btn btn-outline btn-icon" href="/file/${book.id}" title="İndir" download>${I.download}</a>

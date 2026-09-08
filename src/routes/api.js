@@ -7,6 +7,7 @@ import { toggleFavorite, saveProgress, getProgress } from '../services/books.js'
 import { sendMail } from '../services/mailer.js';
 import { bookFilePath, downloadName } from './reader.js';
 import { verifyPassword } from './auth.js';
+import { destroyUserSessions } from '../session-store.js';
 
 export const router = Router();
 router.use(requireLogin);
@@ -104,7 +105,23 @@ router.post('/profile', (req, res) => {
     return res.status(400).json({ success: false, message: 'Geçersiz e-posta adresi formatı.' });
   }
 
-  const changingPassword = Boolean(current || next || confirm);
+  const row = db.prepare('SELECT password, kindle_email FROM users WHERE id = ?').get(userId);
+  if (!row) return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı.' });
+
+  // E-okuyucu adresi kitapların gönderileceği yerdir; ele geçirilmiş bir
+  // oturumun kitapları başka adrese yönlendirememesi için değişiklik mevcut
+  // şifreyle onaylanır.
+  const changingEmail = kindleEmail !== String(row.kindle_email || '');
+  const changingPassword = Boolean(next || confirm);
+  if (changingEmail && !changingPassword) {
+    if (!current) {
+      return res.status(400).json({ success: false, message: 'E-okuyucu adresini değiştirmek için mevcut şifrenizi girin.' });
+    }
+    if (!verifyPassword(current, row.password)) {
+      return res.status(400).json({ success: false, message: 'Mevcut şifreniz yanlış.' });
+    }
+  }
+
   if (changingPassword) {
     if (!current || !next || !confirm) {
       return res.status(400).json({ success: false, message: 'Şifre değiştirmek için tüm şifre alanlarını doldurun.' });
@@ -115,8 +132,7 @@ router.post('/profile', (req, res) => {
     if (next !== confirm) {
       return res.status(400).json({ success: false, message: 'Yeni şifreler eşleşmiyor.' });
     }
-    const row = db.prepare('SELECT password FROM users WHERE id = ?').get(userId);
-    if (!row || !verifyPassword(current, row.password)) {
+    if (!verifyPassword(current, row.password)) {
       return res.status(400).json({ success: false, message: 'Mevcut şifreniz yanlış.' });
     }
     db.prepare('UPDATE users SET kindle_email = ?, password = ? WHERE id = ?').run(
@@ -124,6 +140,8 @@ router.post('/profile', (req, res) => {
       bcrypt.hashSync(next, 12),
       userId
     );
+    // Diğer cihazlardaki oturumlar eski şifreyle açılmıştı; kapatılır.
+    destroyUserSessions(userId, req.sessionID);
   } else {
     db.prepare('UPDATE users SET kindle_email = ? WHERE id = ?').run(kindleEmail || null, userId);
   }

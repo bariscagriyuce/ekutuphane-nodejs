@@ -5,6 +5,17 @@ import { db } from './db.js';
 
 const Store = session.Store;
 
+/**
+ * Bir kullanıcının tüm oturumlarını sonlandırır (şifre değişince, yönetici
+ * şifre sıfırlayınca ya da kullanıcı silinince). exceptSid verilirse o oturum
+ * (kullanıcının şu anki tarayıcısı) açık kalır.
+ */
+export function destroyUserSessions(userId, exceptSid = null) {
+  const sql = "DELETE FROM sessions WHERE json_extract(data, '$.user.id') = ?" + (exceptSid ? ' AND sid != ?' : '');
+  const args = exceptSid ? [userId, exceptSid] : [userId];
+  return db.prepare(sql).run(...args).changes;
+}
+
 export class SqliteStore extends Store {
   constructor({ ttlMs = 1000 * 60 * 60 * 24 * 30 } = {}) {
     super();

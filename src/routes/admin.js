@@ -7,6 +7,9 @@ import path from 'node:path';
 import bcrypt from 'bcryptjs';
 import { db, getSettings, setSetting } from '../db.js';
 import { requireLogin, requireAdmin } from '../middleware/auth.js';
+import { csrfValid, csrfReject } from '../middleware/csrf.js';
+import { sniffImageFile } from '../services/images.js';
+import { destroyUserSessions } from '../session-store.js';
 import { BOOK_FORMATS, COVER_FORMATS, COVERS_DIR, IMPORT_DIR } from '../config.js';
 import { addBookFromFile, deleteBook, scanImportDir, importFromImportDir } from '../services/import.js';
 import { sendMail, smtpConfigured } from '../services/mailer.js';
@@ -74,6 +77,12 @@ router.post(
   '/admin/books',
   upload.fields([{ name: 'book_file', maxCount: 1 }, { name: 'cover_file', maxCount: 1 }]),
   (req, res) => {
+    // multipart gövde ancak şimdi ayrıştırıldı; CSRF denetimi burada yapılır
+    if (!csrfValid(req)) {
+      cleanupTmp(req.files);
+      return csrfReject(req, res);
+    }
+
     const bookFile = req.files?.book_file?.[0];
     if (!bookFile) return flash(req, res, 'error', 'Lütfen bir kitap dosyası seçin.');
 
@@ -91,8 +100,10 @@ router.post(
     const coverFile = req.files?.cover_file?.[0];
     if (coverFile) {
       const coverExt = path.extname(coverFile.originalname).slice(1).toLowerCase();
-      if (COVER_FORMATS.includes(coverExt)) {
-        const name = `${Date.now().toString(36)}_cover.${coverExt}`;
+      // Uzantı beyandır; dosyanın gerçekten görsel olduğu içeriğinden doğrulanır
+      const realExt = sniffImageFile(coverFile.path);
+      if (COVER_FORMATS.includes(coverExt) && realExt) {
+        const name = `${Date.now().toString(36)}_cover.${realExt}`;
         fs.copyFileSync(coverFile.path, path.join(COVERS_DIR, name));
         coverPath = `uploads/covers/${name}`;
       }
@@ -177,6 +188,8 @@ router.post('/admin/users/:id/password', (req, res) => {
   db.prepare('UPDATE users SET password = ? WHERE id = ?').run(bcrypt.hashSync(password, 12), id);
   // Şifre sıfırlanınca giriş denemesi kilidi de kalkmalı
   db.prepare('DELETE FROM login_attempts WHERE username = ?').run(user.username);
+  // Eski şifreyle açılmış oturumlar kapatılır (yöneticinin kendi oturumu hariç)
+  destroyUserSessions(id, id === req.session.user.id ? req.sessionID : null);
 
   res.json({ success: true, message: `"${user.username}" kullanıcısının şifresi güncellendi.` });
 });
@@ -188,6 +201,8 @@ router.post('/admin/users/:id/delete', (req, res) => {
   db.prepare('DELETE FROM favorites WHERE user_id = ?').run(id);
   db.prepare('DELETE FROM progress WHERE user_id = ?').run(id);
   db.prepare('DELETE FROM annotations WHERE user_id = ?').run(id);
+  // Silinen kullanıcının açık oturumları da geçersiz kılınır
+  destroyUserSessions(id);
   return flash(req, res, 'success', 'Kullanıcı silindi.');
 });
 

@@ -11,7 +11,7 @@
       <div class="fb-author"><%= book.author %></div>
     </div>
     <% if (book.coverUrl) { %>
-      <img src="<%= book.coverUrl %>" alt="" loading="lazy" decoding="async" onerror="this.remove()">
+      <img src="<%= book.coverUrl %>" alt="" loading="lazy" decoding="async" data-cover>
     <% } %>
 
     <div class="cover-actions">

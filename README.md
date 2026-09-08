@@ -206,6 +206,16 @@ Başlıklar:
 - Dosya yolları `DATA_ROOT` dışına çıkamaz (path traversal koruması)
 - Oturum çerezi `httpOnly` + `sameSite=lax`; `NODE_ENV=production` ise `secure`
 - Şifreler bcrypt ile saklanır (cost 12)
+- İçerik Güvenlik Politikası (CSP, nonce'lu satır içi betik), `X-Frame-Options`,
+  `X-Content-Type-Options`, `Referrer-Policy`; HTTPS'te HSTS
+- `<script>` içine gömülen JSON `<` karakterini kaçırır (`</script>` enjeksiyonu kapalı)
+- Giriş kilidi hem kullanıcı+IP (5) hem yalnızca kullanıcı (20) bazında; IP
+  sahteciliği kilidi atlatamaz. Vekil arkasında değilseniz `TRUST_PROXY=0` verin
+- Şifre değişince, yönetici sıfırlayınca ya da kullanıcı silinince açık
+  oturumlar düşer
+- E-okuyucu adresi değişikliği mevcut şifre ister (ele geçirilen oturum
+  kitapları başka adrese yönlendiremez)
+- Kapak görselleri uzantıya değil dosya içeriğine (magic number) göre doğrulanır
 
 Üretimde `NODE_ENV=production`, kendi `SESSION_SECRET`'ınız ve HTTPS sonlandıran
 bir ters vekil sunucu (nginx/Caddy) kullanın.

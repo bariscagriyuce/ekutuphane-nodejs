@@ -13,6 +13,7 @@ import {
 } from '../config.js';
 import { getEpubMetadata, parseFilename } from './epub.js';
 import { searchKey } from './search.js';
+import { sniffImage } from './images.js';
 
 const uid = () => crypto.randomBytes(8).toString('hex');
 const safeName = (name) => name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -58,8 +59,9 @@ export function isInside(child, parent) {
 
 function saveCover(coverData, coverName) {
   if (!coverData || !coverName) return null;
-  let ext = path.extname(coverName).slice(1).toLowerCase();
-  if (!COVER_FORMATS.includes(ext)) ext = 'jpg';
+  // EPUB manifesti ne derse desin dosyanın gerçekten görsel olduğu doğrulanır
+  const ext = sniffImage(coverData);
+  if (!ext || !COVER_FORMATS.includes(ext)) return null;
   const name = `${uid()}_cover.${ext}`;
   fs.writeFileSync(path.join(COVERS_DIR, name), coverData);
   return `uploads/covers/${name}`;

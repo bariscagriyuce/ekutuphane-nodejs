@@ -98,5 +98,5 @@
 
 <%- include('partials/profile-modal') %>
 
-<script id="page-state" type="application/json"><%- JSON.stringify({ shelf, sort, format, search, page, total, pageSize }) %></script>
+<script id="page-state" type="application/json"><%- jsonForScript({ shelf, sort, format, search, page, total, pageSize }) %></script>
 <%- include('partials/foot') %>

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { requireLogin } from '../middleware/auth.js';
 import { getBook } from '../services/books.js';
 import { db } from '../db.js';
-import { READABLE_FORMATS, resolveDataPath } from '../config.js';
+import { READABLE_FORMATS, COVER_FORMATS, resolveDataPath } from '../config.js';
 
 export const router = Router();
 router.use(requireLogin);
@@ -91,7 +91,9 @@ router.get('/file/:id', (req, res) => {
 
 // Kapak görselleri (yalnızca uploads/covers içinden)
 router.get('/covers/:file', (req, res) => {
-  const abs = resolveDataPath(path.posix.join('uploads/covers', path.basename(req.params.file)));
+  const name = path.basename(req.params.file);
+  if (!COVER_FORMATS.includes(path.extname(name).slice(1).toLowerCase())) return res.status(404).end();
+  const abs = resolveDataPath(path.posix.join('uploads/covers', name));
   if (!abs || !fs.existsSync(abs)) return res.status(404).end();
   res.setHeader('Cache-Control', 'private, max-age=86400');
   res.sendFile(abs);

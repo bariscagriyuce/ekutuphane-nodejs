@@ -2,9 +2,13 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { db } from '../db.js';
-import { LOGIN_MAX_ATTEMPTS, LOGIN_LOCKOUT_MINUTES } from '../config.js';
+import { LOGIN_MAX_ATTEMPTS, LOGIN_MAX_ATTEMPTS_PER_USER, LOGIN_LOCKOUT_MINUTES } from '../config.js';
 
 export const router = Router();
+
+// Kullanıcı adı yokken de bcrypt çalıştırılır; yoksa yanıt süresi farkından
+// hangi kullanıcı adlarının var olduğu anlaşılır.
+const DUMMY_HASH = bcrypt.hashSync('e-kutuphane-zamanlama-esitleyici', 12);
 
 /** PHP'nin password_hash ($2y$) çıktısı bcryptjs ile doğrulanabilsin diye normalize edilir. */
 function verifyPassword(plain, hash) {
@@ -42,13 +46,22 @@ router.post('/login', (req, res) => {
     `-${LOGIN_LOCKOUT_MINUTES} minutes`
   );
 
+  const lockedMessage = `Çok fazla başarısız deneme yaptınız. Lütfen ${LOGIN_LOCKOUT_MINUTES} dakika sonra tekrar deneyin.`;
   const attempt = db.prepare('SELECT attempts FROM login_attempts WHERE username = ? AND ip = ?').get(username, ip);
-  if (attempt && attempt.attempts >= LOGIN_MAX_ATTEMPTS) {
-    return fail(`Çok fazla başarısız deneme yaptınız. Lütfen ${LOGIN_LOCKOUT_MINUTES} dakika sonra tekrar deneyin.`);
-  }
+  if (attempt && attempt.attempts >= LOGIN_MAX_ATTEMPTS) return fail(lockedMessage);
+
+  // IP'den bağımsız ikinci sınır: farklı adreslerden (ya da sahte
+  // X-Forwarded-For ile) aynı hesaba yapılan denemeleri de durdurur.
+  const perUser = db
+    .prepare('SELECT COALESCE(SUM(attempts), 0) AS total FROM login_attempts WHERE username = ?')
+    .get(username).total;
+  if (perUser >= LOGIN_MAX_ATTEMPTS_PER_USER) return fail(lockedMessage);
 
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-  if (!user || !verifyPassword(password, user.password)) {
+  let valid = false;
+  if (user) valid = verifyPassword(password, user.password);
+  else bcrypt.compareSync(password, DUMMY_HASH); // sabit süre; sonuç kullanılmaz
+  if (!valid) {
     db.prepare(
       `INSERT INTO login_attempts (username, ip, attempts, last_attempt)
        VALUES (?, ?, 1, CURRENT_TIMESTAMP)
@@ -79,8 +92,12 @@ router.post('/logout', (req, res) => {
   });
 });
 
-// Tarayıcıdan doğrudan /logout çağrılırsa da çalışsın
+// Tarayıcıdan doğrudan /logout yazılırsa da çalışsın. Ancak başka bir siteden
+// gelen bir bağlantı/görsel isteği (CSRF ile zorla çıkış) yok sayılır:
+// Sec-Fetch-Site başlığı "cross-site" ise oturuma dokunulmaz.
 router.get('/logout', (req, res) => {
+  const site = String(req.get('sec-fetch-site') || '').toLowerCase();
+  if (site === 'cross-site') return res.redirect('/');
   req.session.destroy(() => {
     res.clearCookie('ekutuphane.sid');
     res.redirect('/login');

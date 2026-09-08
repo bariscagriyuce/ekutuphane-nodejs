@@ -194,7 +194,7 @@
                                   title="Şifresini sıfırla"><%- icon('key') %></button>
                           <% if (u.id !== user.id) { %>
                             <form action="/admin/users/<%= u.id %>/delete" method="post"
-                                  onsubmit="return confirm('<%= u.username %> kullanıcısı ve tüm okuma verileri silinecek. Emin misiniz?')">
+                                  data-confirm="<%= u.username %> kullanıcısı ve tüm okuma verileri silinecek. Emin misiniz?">
                               <input type="hidden" name="csrf_token" value="<%= csrfToken %>">
                               <button class="btn btn-danger btn-icon btn-sm" type="submit" title="Kullanıcıyı sil"><%- icon('trash') %></button>
                             </form>
