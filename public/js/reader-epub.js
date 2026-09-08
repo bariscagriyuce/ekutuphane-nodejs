@@ -31,12 +31,38 @@ function langOf(node) {
   return (node?.getAttribute?.('xml:lang') || node?.getAttribute?.('lang') || '').replace('_', '-');
 }
 
+const RTL_CHAR = /[\u0590-\u05FF\u0600-\u06FF\u0700-\u074F\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+const LTR_CHAR = /\p{Script=Latin}|\p{Script=Cyrillic}|\p{Script=Greek}/u;
+
+/**
+ * Sayfadaki harflere bakarak yönü belirler.
+ *
+ * Dil etiketlerine güvenilemiyor: Arapça alıntı içeren Türkçe kitaplarda
+ * hem dc:language hem de <html xml:lang> "ar" olarak yazılabiliyor. Metnin
+ * kendisi bu konuda yanılmaz; hangi yazı sistemi baskınsa yön odur.
+ */
+function detectByContent(doc) {
+  const text = (doc?.body?.textContent || '').slice(0, 4000);
+  let rtl = 0;
+  let ltr = 0;
+  for (const ch of text) {
+    if (RTL_CHAR.test(ch)) rtl += 1;
+    else if (LTR_CHAR.test(ch)) ltr += 1;
+  }
+  if (rtl + ltr < 20) return null; // karar vermeye yetecek harf yok
+  return rtl > ltr ? 'rtl' : 'ltr';
+}
+
 function autoDirection(doc) {
-  // Belgenin kendi dili en güvenilir bilgi
+  // 1) Metnin kendisi
+  const byContent = detectByContent(doc);
+  if (byContent) return byContent;
+
+  // 2) Belgenin dil etiketi
   const docLang = langOf(doc?.body) || langOf(doc?.documentElement);
   if (docLang) return RTL_LANG.test(docLang) ? 'rtl' : 'ltr';
 
-  // Yoksa kitap metadatasına düş
+  // 3) Kitap metadatası
   const meta = book?.metadata?.language;
   const bookLang = Array.isArray(meta) ? meta[0] : meta;
   return RTL_LANG.test(String(bookLang || '')) ? 'rtl' : 'ltr';
@@ -87,6 +113,17 @@ function contentStyles() {
     a:link, a:visited { color: ${c.link} !important; }
     img, svg { max-width: 100% !important; height: auto !important; }
     ::selection { background: rgba(108, 140, 255, .35); }
+    /* Dipnot işaretleri üst simge olduğu için 8-10 piksellik hedefler oluyor;
+       özellikle dokunmatikte isabet ettirmek zor. Satır yüksekliğini
+       bozmadan dokunma alanını büyütüyoruz (satır içi öğede dikey dolgu
+       satır kutusunu etkilemez). */
+    sup a, sub a,
+    a[class*="footnote" i], a[class*="Footnote"],
+    a[class*="dipnot" i], a[class*="note-link" i],
+    a[epub|type~="noteref"] {
+      padding: 0.5em 0.35em !important;
+      margin: -0.5em -0.2em !important;
+    }
     html, body, p, li, blockquote, dd, span, div, h1, h2, h3, h4, h5, h6 {
       -webkit-user-select: text !important; user-select: text !important;
     }
@@ -175,19 +212,38 @@ const NOTE_CLASS = /footnote|endnote|rearnote|dipnot|hasiye|haşiye/i;
 const NOTE_TYPE = /footnote|endnote|rearnote|note/i;
 const BACKLINK = /backlink|footnoteanchor|noteback/i;
 
-/** Hedef düğümden yukarı çıkarak notun gövdesini bulur. */
+const BLOCK_TAG = /^(DIV|ASIDE|SECTION|ARTICLE|P|LI|DD|TD|BLOCKQUOTE)$/;
+
+/**
+ * Etiket adını büyük harfe çevirir.
+ * EPUB içerikleri XHTML olarak ayrıştırıldığı için tagName KÜÇÜK harf döner
+ * ("a", "p", "div"); HTML belgelerinde ise büyük harftir. Doğrudan
+ * karşılaştırma yapılırsa kontroller XHTML kitaplarda hiç eşleşmez.
+ */
+const tag = (node) => String(node?.tagName || '').toUpperCase();
+
+/**
+ * Hedef düğümden yukarı çıkarak notun gövdesini bulur.
+ *
+ * Yalnızca blok düzeyindeki kutular aday olabilir: bazı kitaplarda hedef
+ * doğrudan <a class="footnote-anchor">1</a> gibi satır içi bir bağlantı olur;
+ * sınıfında "footnote" geçtiği için orada durursak kart yalnızca "1" içerir
+ * ve boş görünür. Asıl not gövdesi onu saran <p class="Dipnot">'tur.
+ */
 function findNoteBlock(el) {
   let node = el;
   let fallback = null;
-  while (node && node.nodeType === 1 && node.tagName !== 'BODY') {
-    const cls = String(node.getAttribute('class') || '');
-    const type = String(node.getAttribute('epub:type') || '') + ' ' + String(node.getAttribute('role') || '');
-    // Çoğul sarmalayıcı (tüm notlar) yerine tekil not kutusunu yakalarız:
-    // döngü en yakın eşleşmede durduğu için doğru olan seçilir.
-    if (NOTE_CLASS.test(cls) || NOTE_TYPE.test(type) || node.tagName === 'ASIDE') {
-      return { el: node, isNote: true };
+  while (node && node.nodeType === 1 && tag(node) !== 'BODY') {
+    if (BLOCK_TAG.test(tag(node))) {
+      const cls = String(node.getAttribute('class') || '');
+      const type = String(node.getAttribute('epub:type') || '') + ' ' + String(node.getAttribute('role') || '');
+      // Çoğul sarmalayıcı (tüm notlar) yerine tekil not kutusunu yakalarız:
+      // döngü en yakın eşleşmede durduğu için doğru olan seçilir.
+      if (NOTE_CLASS.test(cls) || NOTE_TYPE.test(type) || tag(node) === 'ASIDE') {
+        return { el: node, isNote: true };
+      }
+      if (!fallback) fallback = node;
     }
-    if (!fallback && /^(P|LI|DD|DIV|TD|ASIDE)$/.test(node.tagName)) fallback = node;
     node = node.parentElement;
   }
   return { el: fallback, isNote: false };
@@ -232,7 +288,14 @@ async function resolveNote(a, href) {
   if (!isNote && !(looksLikeMarker(a.textContent) && text.length < 1500)) return null;
 
   const title = (a.textContent || '').trim() || 'Not';
-  return { title, html: stripLeadingMarker(sanitizeNote(el), title) };
+  const html = stripLeadingMarker(sanitizeNote(el), title);
+
+  // Numarayı kırptıktan sonra geriye anlamlı bir şey kalmadıysa kart açmak
+  // yerine bağlantının kendi işini yapmasına izin veririz.
+  const kalan = html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  if (kalan.length < 2) return null;
+
+  return { title, html };
 }
 
 function showNotePopup({ title, html }, anchorRect) {
@@ -397,12 +460,12 @@ function hookSwipe(doc) {
 function scaleStandaloneImages(doc) {
   for (const el of doc.querySelectorAll('img, svg')) {
     const parent = el.parentElement;
-    if (!parent || !['P', 'DIV', 'BODY', 'SECTION'].includes(parent.tagName)) continue;
+    if (!parent || !['P', 'DIV', 'BODY', 'SECTION'].includes(tag(parent))) continue;
     if (parent.children.length !== 1 && parent.textContent.trim() !== '') continue;
     const width = Number.parseFloat(doc.defaultView?.getComputedStyle(el).width) || 0;
     const attr = Number.parseInt(el.getAttribute('width') || '0', 10);
     if ((width > 0 && width < 150) || (attr > 0 && attr < 150)) continue;
-    if (el.tagName === 'svg' && !el.getAttribute('viewBox') && el.getAttribute('width') && el.getAttribute('height')) {
+    if (tag(el) === 'SVG' && !el.getAttribute('viewBox') && el.getAttribute('width') && el.getAttribute('height')) {
       el.setAttribute('viewBox', `0 0 ${el.getAttribute('width')} ${el.getAttribute('height')}`);
     }
     el.style.setProperty('width', '100%', 'important');
