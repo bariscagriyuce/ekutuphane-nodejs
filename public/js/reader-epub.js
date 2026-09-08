@@ -290,7 +290,10 @@ async function documentForSection(index) {
 async function resolveNote(a, href) {
   if (BACKLINK.test(String(a.getAttribute('class') || '') + ' ' + href)) return null;
 
-  const resolved = book?.resolveHref?.(href);
+  // AZW3/KF8 kitaplarda resolveHref ASENKRONdur (EPUB ve MOBI'de eşzamanlı).
+  // await ikisini de karşılar; beklemezsek elimize Promise geçer ve index
+  // okunamadığı için not hiç bulunamaz.
+  const resolved = await book?.resolveHref?.(href);
   if (!resolved || resolved.index == null) return null;
 
   const doc = await documentForSection(resolved.index);
