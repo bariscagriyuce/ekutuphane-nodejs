@@ -18,19 +18,21 @@
         <input type="hidden" name="sort" value="<%= sort %>">
       </form>
 
-      <div class="topbar-actions">
-        <select class="select hide-sm" id="sort-select" aria-label="Sıralama" style="width:auto">
+      <div class="topbar-controls">
+        <select class="select" id="sort-select" aria-label="Sıralama">
           <option value="recent" <%= sort === 'recent' ? 'selected' : '' %>>En yeni</option>
           <option value="title"  <%= sort === 'title'  ? 'selected' : '' %>>Başlığa göre</option>
           <option value="author" <%= sort === 'author' ? 'selected' : '' %>>Yazara göre</option>
           <option value="progress" <%= sort === 'progress' ? 'selected' : '' %>>İlerlemeye göre</option>
         </select>
 
-        <div class="seg hide-sm" id="view-toggle">
+        <div class="seg" id="view-toggle">
           <button type="button" data-view="grid" class="active" aria-label="Izgara görünümü"><%- icon('grid') %></button>
           <button type="button" data-view="list" aria-label="Liste görünümü"><%- icon('list') %></button>
         </div>
+      </div>
 
+      <div class="topbar-actions">
         <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="Temayı değiştir">
           <span class="on-dark"><%- icon('sun') %></span>
           <span class="on-light"><%- icon('moon') %></span>

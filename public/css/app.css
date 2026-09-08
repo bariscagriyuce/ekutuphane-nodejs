@@ -288,7 +288,12 @@ svg { flex-shrink: 0; }
 }
 .search input:not(:placeholder-shown) ~ kbd { display: none; }
 
-.topbar-actions { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
+.topbar-actions { display: flex; align-items: center; gap: 0.5rem; }
+
+/* Sıralama + görünüm denetimleri. Üst çubuğun doğrudan çocuğu oldukları
+   için dar ekranda kendi satırlarına kayabiliyorlar. */
+.topbar-controls { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
+.topbar-controls .select { width: auto; }
 
 .seg {
   display: flex; background: var(--bg-elevated);
@@ -643,8 +648,22 @@ td.num { font-variant-numeric: tabular-nums; color: var(--text-dim); }
 @media (max-width: 560px) {
   .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 1rem 0.75rem; }
   .shelf { grid-auto-columns: 132px; }
-  .topbar-actions .hide-sm { display: none; }
   .toasts { left: 1rem; right: 1rem; bottom: 1rem; }
+
+  /* Telefonda arama kutusu tek satıra sığmadığı için sıralama ve görünüm
+     denetimleri alt satıra iner; eskiden gizleniyorlardı. */
+  .topbar {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 0.55rem 1rem 0.65rem;
+    row-gap: 0.55rem;
+  }
+  .topbar-controls {
+    order: 10;
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+  .topbar-controls .select { flex: 1; width: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {
