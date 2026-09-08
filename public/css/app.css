@@ -88,6 +88,7 @@
 html { -webkit-text-size-adjust: 100%; }
 
 body {
+  overflow-x: hidden;
   font-family: var(--font);
   font-size: 15px;
   line-height: 1.55;
@@ -183,7 +184,7 @@ svg { flex-shrink: 0; }
 .app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
 
 .sidebar {
-  position: sticky; top: 0; height: 100vh;
+  position: sticky; top: 0; height: 100vh; height: 100dvh;
   display: flex; flex-direction: column;
   background: var(--bg-elevated);
   border-right: 1px solid var(--border);
@@ -621,6 +622,10 @@ td.num { font-variant-numeric: tabular-nums; color: var(--text-dim); }
     box-shadow: var(--shadow-lg);
   }
   .app.nav-open .sidebar { transform: translateX(0); }
+  /* Çekmecede alt bilgiyi ekranın dibine itmek erişimi zorlaştırıyor;
+     menü öğelerinin hemen altında dursun. */
+  .sidebar-footer { margin-top: 0.5rem; }
+  .sidebar { padding-bottom: max(1.1rem, env(safe-area-inset-bottom)); }
   .app.nav-open .scrim { display: block; position: fixed; inset: 0; z-index: 35; background: rgba(4, 7, 13, 0.5); }
   .menu-toggle { display: grid; }
   .content { padding: 1rem; }

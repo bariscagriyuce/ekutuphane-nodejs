@@ -39,7 +39,12 @@ body.reader-body {
 .rheader .btn.on { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
 
 /* ---------- Sahne ---------- */
-.rstage { flex: 1; position: relative; min-height: 0; display: flex; }
+.rstage {
+  flex: 1; position: relative; min-height: 0; display: flex;
+  /* Kapalı çekmeceler translateX(±101%) ile dışarı çıkıyor; kırpılmazsa
+     sayfa yatayda uzuyor ve içerik kaydırılabilir hâle geliyor. */
+  overflow: hidden;
+}
 .rviewport { flex: 1; position: relative; min-width: 0; background: var(--paper); }
 foliate-view { display: block; width: 100%; height: 100%; }
 
