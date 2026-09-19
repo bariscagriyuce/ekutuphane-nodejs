@@ -14,7 +14,7 @@
     "check": "node src/scripts/check-data.js"
   },
   "dependencies": {
-    "adm-zip": "^0.6.0",
+    "adm-zip": "^0.6.1",
     "bcryptjs": "^3.0.2",
     "compression": "^1.8.0",
     "dotenv": "^17.2.1",
