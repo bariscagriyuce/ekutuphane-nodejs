@@ -37,8 +37,15 @@ export const UPLOAD_DIR = path.join(DATA_ROOT, 'uploads');
 export const BOOKS_DIR = path.join(UPLOAD_DIR, 'books');
 export const COVERS_DIR = path.join(UPLOAD_DIR, 'covers');
 export const IMPORT_DIR = path.join(UPLOAD_DIR, 'import');
+/**
+ * Yüklenen dosyaların geçici olarak indiği klasör. Sistemin /tmp dizini DEĞİL:
+ * paylaşımlı hostinglerde /tmp çoğu zaman ayrı bir dosya sistemidir ve oradan
+ * BOOKS_DIR'e rename() "EXDEV: cross-device link not permitted" ile düşer.
+ * Geçici dosyayı hedefle aynı disk bölümünde tutarsak taşıma tek adımda biter.
+ */
+export const TMP_DIR = path.join(UPLOAD_DIR, 'tmp');
 
-for (const dir of [UPLOAD_DIR, BOOKS_DIR, COVERS_DIR, IMPORT_DIR]) {
+for (const dir of [UPLOAD_DIR, BOOKS_DIR, COVERS_DIR, IMPORT_DIR, TMP_DIR]) {
   try {
     fs.mkdirSync(dir, { recursive: true });
   } catch (err) {

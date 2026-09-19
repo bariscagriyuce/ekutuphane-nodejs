@@ -2,7 +2,6 @@
 import { Router } from 'express';
 import multer from 'multer';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import bcrypt from 'bcryptjs';
 import { db, getSettings, setSetting } from '../db.js';
@@ -10,7 +9,7 @@ import { requireLogin, requireAdmin } from '../middleware/auth.js';
 import { csrfValid, csrfReject } from '../middleware/csrf.js';
 import { sniffImageFile } from '../services/images.js';
 import { destroyUserSessions } from '../session-store.js';
-import { BOOK_FORMATS, COVER_FORMATS, COVERS_DIR, IMPORT_DIR } from '../config.js';
+import { BOOK_FORMATS, COVER_FORMATS, COVERS_DIR, IMPORT_DIR, TMP_DIR } from '../config.js';
 import { addBookFromFile, deleteBook, scanImportDir, importFromImportDir } from '../services/import.js';
 import { sendMail, smtpConfigured } from '../services/mailer.js';
 import { listBooks } from '../services/books.js';
@@ -23,7 +22,9 @@ export const router = Router();
 router.use('/admin', requireLogin, requireAdmin);
 
 const upload = multer({
-  dest: path.join(os.tmpdir(), 'ekutuphane-uploads'),
+  // Geçici dosyalar veri klasörünün içinde tutulur; böylece kitap dizinine
+  // taşıma aynı dosya sistemi üzerinde kalır (bkz. config.js TMP_DIR).
+  dest: TMP_DIR,
   limits: { fileSize: 512 * 1024 * 1024 }, // 512 MB
 });
 

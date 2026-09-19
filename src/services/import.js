@@ -16,6 +16,21 @@ import { searchKey } from './search.js';
 import { sniffImage } from './images.js';
 
 const uid = () => crypto.randomBytes(8).toString('hex');
+
+/**
+ * Dosyayı taşır. rename() aynı dosya sistemi içinde anlıktır; kaynak ile hedef
+ * farklı bölümlerdeyse (EXDEV) kopyala-sil yoluna düşeriz.
+ */
+function moveFile(sourcePath, targetFull) {
+  try {
+    fs.renameSync(sourcePath, targetFull);
+  } catch (err) {
+    if (err.code !== 'EXDEV') throw err;
+    fs.copyFileSync(sourcePath, targetFull);
+    fs.rmSync(sourcePath, { force: true });
+  }
+}
+
 const safeName = (name) => name.replace(/[^a-zA-Z0-9._-]/g, '_');
 
 /** İçe aktarma klasörünü özyinelemeli tarar. */
@@ -110,7 +125,7 @@ export function addBookFromFile(sourcePath, opts = {}) {
   const targetRel = `uploads/books/${targetName}`;
   const targetFull = path.join(BOOKS_DIR, targetName);
 
-  if (mode === 'move') fs.renameSync(sourcePath, targetFull);
+  if (mode === 'move') moveFile(sourcePath, targetFull);
   else fs.copyFileSync(sourcePath, targetFull);
 
   try {
