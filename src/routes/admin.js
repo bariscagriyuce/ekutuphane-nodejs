@@ -25,7 +25,9 @@ const upload = multer({
   // Geçici dosyalar veri klasörünün içinde tutulur; böylece kitap dizinine
   // taşıma aynı dosya sistemi üzerinde kalır (bkz. config.js TMP_DIR).
   dest: TMP_DIR,
-  limits: { fileSize: 512 * 1024 * 1024 }, // 512 MB
+  // Yükleme sınırı: adm-zip EPUB'ı tamamen belleğe aldığı için bu değer aynı
+  // zamanda bir bellek tavanıdır; kitap dosyaları için 100 MB fazlasıyla yeterli.
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB
 });
 
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);

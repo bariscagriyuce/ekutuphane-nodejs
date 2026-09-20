@@ -30,16 +30,32 @@ const textOf = (node) => {
   return String(node).trim();
 };
 
-function readEntry(zip, name) {
+// Bozuk ya da kötü niyetli bir EPUB, girdi başlığında gerçek veriyle ilgisiz,
+// çok büyük bir "açılmış boyut" bildirerek belleği tüketmeye çalışabilir
+// (adm-zip CVE-2026-39244 sınıfı zip bombası). adm-zip 0.6.1 bunu kendi içinde
+// sınırlar; burada ayrıca okuduğumuz her girdi için makul üst sınırlar uygulanır,
+// böylece tek savunma hattı kütüphane olmasın.
+const MAX_XML_BYTES = 8 * 1024 * 1024; // container.xml ve .opf
+const MAX_COVER_BYTES = 16 * 1024 * 1024; // kapak görseli
+
+function readLimited(zip, entry, maxBytes) {
+  // Bildirilen boyut, veri açılmadan önce bakılabilen tek ipucu.
+  if (Number(entry.header?.size) > maxBytes) return null;
+  const buf = zip.readFile(entry);
+  // Bildirilen boyut yalan olabilir; açılan veriyi de ölçüp doğrula.
+  return buf && buf.length <= maxBytes ? buf : null;
+}
+
+function readEntry(zip, name, maxBytes) {
   const tryNames = [name, decodeURIComponent(name), encodeURI(name)];
   for (const n of tryNames) {
     const entry = zip.getEntry(n);
-    if (entry) return zip.readFile(entry);
+    if (entry) return readLimited(zip, entry, maxBytes);
   }
   // Büyük/küçük harf farkına karşı son çare
   const lower = name.toLowerCase();
   const match = zip.getEntries().find((e) => e.entryName.toLowerCase() === lower);
-  return match ? zip.readFile(match) : null;
+  return match ? readLimited(zip, match, maxBytes) : null;
 }
 
 /**
@@ -54,7 +70,7 @@ export function getEpubMetadata(filePath) {
   }
 
   try {
-    const containerBuf = readEntry(zip, 'META-INF/container.xml');
+    const containerBuf = readEntry(zip, 'META-INF/container.xml', MAX_XML_BYTES);
     if (!containerBuf) return null;
 
     const container = parser.parse(containerBuf.toString('utf8'));
@@ -62,7 +78,7 @@ export function getEpubMetadata(filePath) {
     const opfPath = rootfile?.['@_full-path'];
     if (!opfPath) return null;
 
-    const opfBuf = readEntry(zip, opfPath);
+    const opfBuf = readEntry(zip, opfPath, MAX_XML_BYTES);
     if (!opfBuf) return null;
     const opf = parser.parse(opfBuf.toString('utf8'));
     const pkg = opf?.package;
@@ -102,7 +118,7 @@ export function getEpubMetadata(filePath) {
     if (coverHref) {
       const opfDir = opfPath.includes('/') ? opfPath.slice(0, opfPath.lastIndexOf('/')) : '';
       const inZip = canonicalize(opfDir ? `${opfDir}/${coverHref}` : coverHref);
-      coverData = readEntry(zip, inZip) || readEntry(zip, coverHref);
+      coverData = readEntry(zip, inZip, MAX_COVER_BYTES) || readEntry(zip, coverHref, MAX_COVER_BYTES);
       if (coverData) coverName = coverHref.split('/').pop();
     }
 
