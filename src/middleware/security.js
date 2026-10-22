@@ -17,8 +17,8 @@ export function securityHeaders(req, res, next) {
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net`,
-    "style-src 'self' 'unsafe-inline' blob: https://fonts.googleapis.com",
-    "font-src 'self' data: blob: https://fonts.gstatic.com",
+    "style-src 'self' 'unsafe-inline' blob:",
+    "font-src 'self' data: blob:",
     "img-src 'self' data: blob:",
     "media-src 'self' blob:",
     "frame-src 'self' blob:",

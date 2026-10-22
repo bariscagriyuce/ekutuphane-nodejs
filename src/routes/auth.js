@@ -31,6 +31,15 @@ router.get('/login', (req, res) => {
   res.render('login', { title: 'Giriş Yap', error: null, username: '', next: req.query.next || '' });
 });
 
+// Ana sayfa, oturum yoksa giriş formunu doğrudan gösterir. /login'e 302 ile
+// göndermek, ilk ziyarette (ve mobil hız testlerinde) fazladan bir gidiş-dönüş
+// demekti. Form yine /login'e gönderilir; başarılı girişte "/"'ye dönülür.
+router.get('/', (req, res, next) => {
+  if (req.session.user) return next();
+  const next_ = req.originalUrl === '/' ? '' : req.originalUrl; // ör. /?shelf=favorites
+  res.render('login', { title: 'Giriş Yap', error: null, username: '', next: next_ });
+});
+
 router.post('/login', (req, res) => {
   const username = String(req.body.username || '').trim();
   const password = String(req.body.password || '');

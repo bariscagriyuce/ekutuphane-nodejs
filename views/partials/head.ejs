@@ -26,23 +26,30 @@
     // min(100svh, --app-h) ile hangisi küçükse o kullanılır. Bu betik hiç
     // çalışmazsa da düzen 100svh ile ayakta kalır.
     (function () {
+      var last = 0;
       var set = function () {
         // innerHeight parmakla yakınlaştırmadan etkilenmez; araç çubuğu
-        // açılıp kapandığında ise doğru değeri verir.
-        document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px');
+        // açılıp kapandığında ise doğru değeri verir. Değer değişmediyse
+        // yazılmaz; her yazma stili geçersiz kılıp yeniden hesaplatır.
+        var h = window.innerHeight;
+        if (h === last) return;
+        last = h;
+        document.documentElement.style.setProperty('--app-h', h + 'px');
       };
+      // İlk değer <head>'de, henüz düzen yokken alınır. DOMContentLoaded'da
+      // tekrar okumak, CSS ve DOM hazırken tam bir düzen hesaplatıyordu
+      // (forced reflow); sonraki değişiklikleri resize olayları getirir.
       set();
       window.addEventListener('resize', set);
       window.addEventListener('orientationchange', set);
       if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', set);
       }
-      document.addEventListener('DOMContentLoaded', set);
+      // <head>'de yükseklik henüz bilinmiyorsa (bazı gömülü tarayıcılar 0
+      // verir) DOM hazır olunca bir kez daha denenir.
+      if (!last) document.addEventListener('DOMContentLoaded', set);
     })();
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap">
   <link rel="stylesheet" href="<%= asset('/static/css/app.css') %>">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
   <%- typeof extraHead !== 'undefined' ? extraHead : '' %>

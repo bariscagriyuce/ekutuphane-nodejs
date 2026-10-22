@@ -41,13 +41,16 @@ app.use(express.json({ limit: '2mb' }));
 // de değişir. Yine de "no-cache" veriyoruz; böylece sürümsüz istekler (ör. bir
 // JS modülünün içindeki import) her seferinde doğrulanır — değişmemişse 304
 // döner, değişmişse yenisi iner. Hiçbir durumda bayat dosya kullanılmaz.
+// Yazı tipleri istisnadır: hiç değişmezler ve CSS içinden sürümsüz istenirler;
+// her sayfada yeniden doğrulanmasınlar diye bir ay saklanır.
 app.use(
   '/static',
   express.static(path.join(PROJECT_ROOT, 'public'), {
     etag: true,
     lastModified: true,
-    setHeaders(res) {
-      res.setHeader('Cache-Control', 'no-cache');
+    setHeaders(res, filePath) {
+      const isFont = filePath.endsWith('.woff2');
+      res.setHeader('Cache-Control', isFont ? 'public, max-age=2592000' : 'no-cache');
     },
   })
 );
